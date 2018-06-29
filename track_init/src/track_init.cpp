@@ -2,24 +2,22 @@
 
 namespace track {
 TrackInit::TrackInit(ros::NodeHandle & nh) : nh_(nh) {
-  //got_camera_info_ = false;
+  got_camera_info_ = false;
 
   // setup subscribers and publishers
-  //camera_info_sub_ = nh_.subscribe("camera_info", 1, &TrackInit::cameraInfoCallback, this);
+  camera_info_sub_ = nh_.subscribe("camera_info", 1, &TrackInit::cameraInfoCallback, this);
 
   image_transport::ImageTransport it_(nh_);
   image_sub_ = it_.subscribe("image", 1, &TrackInit::imageCallback, this);
   image_pub_ = it_.advertise("rendering", 1);
-  //undistorted_image_pub_ = it_.advertise("dvs_undistorted", 1);
 }
 
 TrackInit::~TrackInit() {
   image_pub_.shutdown();
-  //undistorted_image_pub_.shutdown();
 }
-/*
-void TrackInit::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg)
-{
+
+void TrackInit::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
+  ROS_DEBUG("got camera info");
   got_camera_info_ = true;
 
   camera_matrix_ = cv::Mat(3, 3, CV_64F);
@@ -31,7 +29,6 @@ void TrackInit::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg)
   for (int i = 0; i < msg->D.size(); i++)
     dist_coeffs_.at<double>(i) = msg->D[i];
 }
-*/
 
 void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
   cv_bridge::CvImageConstPtr cv_ptr;
@@ -43,7 +40,7 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     return;
   }
 
-  ROS_INFO("got an image");
+  ROS_DEBUG("got an image");
 
   // find square in image
   std::vector<cv::Point> square = findSquare(cv_ptr);
@@ -65,8 +62,45 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     img.copyTo(cv_image.image);
     cv_image.encoding = "bgr8";
     image_pub_.publish(cv_image.toImageMsg());
+
+    // TEMPORAL code here to get camera position
+    // assuming square to be 85x85mm centered in Z = 0 plane
+    // that is corners are at [+-85/2, +-85/2, 0]
+
+    // sort point clockwise
+    sortPointsCW(square);
+
+    std::cout << "sorted points: \n";
+    
+    for (int i = 0; i < 4; ++i) {
+      std::cout << "P" << i+1 << " [" << square[i].x << "," << square[i].y << "]\n";
+    }
+    std::cout << '\n' << std::endl;
+
+
+
   } else {
     image_pub_.publish(msg);
+  }
+}
+
+void TrackInit::sortPointsCW(std::vector<cv::Point> &points) {
+  // compute centroid
+  cv::Point C(0,0);
+  for (cv::Point& p : points) C += p;
+  C *= 1.0/points.size();
+  // 
+  std::vector<std::pair<float, cv::Point> > angles(points.size());
+  for (int i = 0; i < points.size(); ++i) {
+    angles[i].first = atan2(points[i].y - C.y, points[i].x - C.x);
+    angles[i].second = points[i];
+  }
+  std::sort(angles.begin(), angles.end(), [](const std::pair<float, cv::Point>& c1, const std::pair<float, cv::Point>& c2) {
+      return c1.first < c2.first;
+  });
+
+  for (int i = 0; i < angles.size(); ++i) {
+    points[i] = angles[i].second;
   }
 }
 

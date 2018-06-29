@@ -24,27 +24,27 @@ public:
 private:
   ros::NodeHandle nh_;
 
-  //void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
+  // get camera info
+  void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
+  // handle raw grayscale intensity image
   void imageCallback(const sensor_msgs::Image::ConstPtr& msg);
-  
   // find square in image an return points
   static std::vector<cv::Point> findSquare(const cv_bridge::CvImageConstPtr img);
-
-  //bool got_camera_info_;
-  //cv::Mat camera_matrix_, dist_coeffs_;
-  //ros::Subscriber camera_info_sub_;
+  // sort points CW
+  static void sortPointsCW(std::vector<cv::Point> &points);
+  
+  bool got_camera_info_;
+  cv::Mat camera_matrix_, dist_coeffs_;
+  ros::Subscriber camera_info_sub_;
 
   image_transport::Publisher image_pub_;
-  //image_transport::Publisher undistorted_image_pub_;
 
   image_transport::Subscriber image_sub_;
-  //cv::Mat last_image_;
-  //bool used_last_image_;
 };
 
 } // namespace
 
 // build with
-// catking build track
+// $ catking build track
 // run with
-// rosrun track track_init ige:=/dvs/image_raw
+// $ rosrun track track_init ige:=/dvs/image_raw
