@@ -7,8 +7,12 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
+
+#include <vector>
+#include <algorithm>
 
 namespace track {
 
@@ -22,6 +26,9 @@ private:
 
   //void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
   void imageCallback(const sensor_msgs::Image::ConstPtr& msg);
+  
+  // find square in image an return points
+  static std::vector<cv::Point> findSquare(const cv_bridge::CvImageConstPtr img);
 
   //bool got_camera_info_;
   //cv::Mat camera_matrix_, dist_coeffs_;
@@ -31,7 +38,7 @@ private:
   //image_transport::Publisher undistorted_image_pub_;
 
   image_transport::Subscriber image_sub_;
-  cv::Mat last_image_;
+  //cv::Mat last_image_;
   //bool used_last_image_;
 };
 
