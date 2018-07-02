@@ -10,10 +10,12 @@ TrackInit::TrackInit(ros::NodeHandle & nh) : nh_(nh) {
   image_transport::ImageTransport it_(nh_);
   image_sub_ = it_.subscribe("image", 1, &TrackInit::imageCallback, this);
   image_pub_ = it_.advertise("rendering", 1);
+  poseStampedPub = nh.advertise<geometry_msgs::PoseStamped>("pose", 2, true);
 }
 
 TrackInit::~TrackInit() {
   image_pub_.shutdown();
+  poseStampedPub.shutdown();
 }
 
 void TrackInit::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
@@ -46,12 +48,8 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
   std::vector<cv::Point> square = findSquare(cv_ptr);
   // draw square and publish
   if (square.size() > 0) {
-    std::cout << "found a square at: \n";
-    
-    for (int i = 0; i < 4; ++i) {
-      std::cout << "P" << i+1 << " [" << square[i].x << "," << square[i].y << "]\n";
-    }
-    std::cout << std::endl;
+  
+    std::cout << "got a square: " <<  square << std::endl;
     // grayscale to color
     cv::Mat img;
     cv::cvtColor(cv_ptr->image, img, CV_GRAY2BGR);
@@ -70,14 +68,55 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     // sort point clockwise
     sortPointsCW(square);
 
-    std::cout << "sorted points: \n";
+    std::cout << "sorted points:" << square << std::endl;
+
+    float hw = 0.085/2; // half width of square
+    // now estimate camera position
+    std::vector<cv::Point3d> model_points {
+      cv::Point3f(-hw, -hw, 0.0f),
+      cv::Point3f(-hw,  hw, 0.0f),
+      cv::Point3f( hw, -hw, 0.0f),
+      cv::Point3f( hw,  hw, 0.0f)
+    };
+
+    std::vector<cv::Point2d> image_points;
+    cv::Mat(square).convertTo(image_points, cv::Mat(image_points).type());  
+
+    cv::Mat rotation_vector; // Rotation in axis-angle form
+    cv::Mat translation_vector;
+    cv::solvePnP(model_points, image_points, camera_matrix_, dist_coeffs_, rotation_vector, translation_vector, false, cv::SOLVEPNP_AP3P);
+
+    std::cout << "model points" << cv::Mat(model_points) << "\nimage points:" << cv::Mat(image_points) << std::endl;
+
+    std::cout << "Rotation Vector " << std::endl << rotation_vector << std::endl;
+    std::cout << "Translation Vector" << std::endl << translation_vector << std::endl;
     
-    for (int i = 0; i < 4; ++i) {
-      std::cout << "P" << i+1 << " [" << square[i].x << "," << square[i].y << "]\n";
+    cv::Point3d pos(translation_vector);
+    cv::Point3d rot(rotation_vector);
+
+    geometry_msgs::PoseStamped poseStamped;
+
+    poseStamped.header.frame_id="map";
+    poseStamped.header.stamp = ros::Time::now();
+
+    poseStamped.pose.position.x = pos.x;
+    poseStamped.pose.position.y = pos.y;
+    poseStamped.pose.position.z = pos.z;
+
+    double angle = sqrt(rot.x*rot.x + rot.y*rot.y + rot.z*rot.z);
+
+    if (angle > 0.0) {
+        poseStamped.pose.orientation.x = rot.x * sin(angle/2)/angle;
+        poseStamped.pose.orientation.y = rot.y * sin(angle/2)/angle;
+        poseStamped.pose.orientation.z = rot.z * sin(angle/2)/angle;
+        poseStamped.pose.orientation.w = cos(angle/2);
+    } else {
+        poseStamped.pose.orientation.x = 0;
+        poseStamped.pose.orientation.y = 0;
+        poseStamped.pose.orientation.z = 0;
+        poseStamped.pose.orientation.w = 1;
     }
-    std::cout << '\n' << std::endl;
-
-
+    poseStampedPub.publish(poseStamped);
 
   } else {
     image_pub_.publish(msg);
@@ -135,3 +174,4 @@ std::vector<cv::Point> TrackInit::findSquare(const cv_bridge::CvImageConstPtr im
 }
 
 } // namespace
+
