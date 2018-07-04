@@ -1,13 +1,13 @@
 <!-- Launch file for init tracking, finds a square in the image -->
 <launch>
   <!-- camera driver -->
-  <!--<node name="davis_ros_driver" pkg="davis_ros_driver" type="davis_ros_driver" />-->
+  <node name="davis_ros_driver" pkg="davis_ros_driver" type="davis_ros_driver" />
 
   <!-- visualization -->
   <node name="track_init" pkg="track_init" type="track_init">
     <remap from="image" to="/dvs/image_raw" />
     <remap from="rendering" to="/track_init_rendering" />
-    <!--<remap from="camera_info" to="/dvs/camera_info" />-->
+    <remap from="camera_info" to="/dvs/camera_info" />
   </node>
 
   <!-- display -->

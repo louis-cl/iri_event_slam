@@ -21,7 +21,7 @@ private:
 
     void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
     void cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
-    void startSignalCallback(const std_msgs::Bool::ConstPtr& msg);
+    void resetCallback(const std_msgs::Bool::ConstPtr& msg);
     void eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg);
     
     // camera info parameters
@@ -29,10 +29,18 @@ private:
     cv::Mat camera_matrix_, dist_coeffs_;
     ros::Subscriber camera_info_sub_;
 
+    // last camera pose
+    bool got_camera_pose_;
+    cv::Vec3d camera_position_; // x,y,z
+    cv::Vec4d camera_orientation_; // quaternion x,y,z,w
+
+    // is running ?
+    bool is_tracking_running_;
+
     // pose msg as initial pose
     ros::Subscriber starting_pose_sub_;
-    // wait for bool to start EFK tracking
-    ros::Subscriber start_sub_;
+    // reset EFK tracking
+    ros::Subscriber reset_sub_;
     // get events
     ros::Subscriber event_sub_;
 };
