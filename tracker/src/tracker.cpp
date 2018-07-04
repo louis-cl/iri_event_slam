@@ -8,6 +8,10 @@ Tracker::Tracker(ros::NodeHandle & nh) : nh_(nh) {
   got_camera_pose_ = false;
   is_tracking_running_ = false;
 
+  // setup efk
+  efk_ = EFK(sigma_v, sigma_w, sigma_d);
+  ROS_INFO_STREAM("init efk Q is \n" << efk_.Q_);
+
   // setup subscribers and publishers
   camera_info_sub_ = nh_.subscribe("camera_info", 1, &Tracker::cameraInfoCallback, this);
   starting_pose_sub_ = nh_.subscribe("camera_pose", 1, &Tracker::cameraPoseCallback, this);
@@ -21,12 +25,12 @@ void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
   ROS_INFO("got camera info");
   got_camera_info_ = true;
 
-  camera_matrix_ = cv::Mat(3, 3, CV_64F);
+  camera_matrix_ = Mat(3, 3, CV_64F);
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
       camera_matrix_.at<double>(cv::Point(i, j)) = msg->K[i+j*3];
 
-  dist_coeffs_ = cv::Mat(msg->D.size(), 1, CV_64F);
+  dist_coeffs_ = Mat(msg->D.size(), 1, CV_64F);
   for (int i = 0; i < msg->D.size(); i++)
     dist_coeffs_.at<double>(i) = msg->D[i];
 
@@ -35,10 +39,10 @@ void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
 
 void Tracker::cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     got_camera_pose_ = true;
-    camera_position_ = cv::Vec3d(msg->pose.position.x,
+    camera_position_ = Vec3d(msg->pose.position.x,
                                  msg->pose.position.y,
                                  msg->pose.position.z);
-    camera_orientation_ = cv::Vec4d(msg->pose.orientation.x,
+    camera_orientation_ = Vec4d(msg->pose.orientation.x,
                                     msg->pose.orientation.y,
                                     msg->pose.orientation.z,
                                     msg->pose.orientation.w);

@@ -12,6 +12,7 @@ find_package(OpenCV REQUIRED)
 cs_add_executable(tracker
   src/tracker.cpp
   src/tracker_node.cpp
+  src/efk.cpp
 )
 
 target_link_libraries(tracker

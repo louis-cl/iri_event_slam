@@ -8,6 +8,13 @@
 #include <dvs_msgs/EventArray.h>
 
 #include <opencv2/opencv.hpp>
+#include <Eigen/Dense>
+
+#include "efk.h"
+
+using cv::Mat;
+using cv::Vec3d;
+using cv::Vec4d;
 
 namespace track {
 
@@ -15,9 +22,18 @@ class Tracker {
 public:
     Tracker(ros::NodeHandle & nh);
     virtual ~Tracker();
+    
+    // uncertainty in movement per second
+    Eigen::Vector3d sigma_v = (Eigen::Vector3d() << 2, 2, 2).finished();
+    Eigen::Vector3d sigma_w = (Eigen::Vector3d() << 2, 2, 2).finished();
+    //const Vec3 sigma_v((Eigen::Matrix3d() << 2,2,2).finished());
+    //const Vec3 sigma_w((Vec3() << 2,2,2).finished());
+    // uncertainty in measurement of pixel-segment distance
+    const double sigma_d    = 0.5;
 
 private:
     ros::NodeHandle nh_;
+    EFK efk_;
 
     void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
     void cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
@@ -26,13 +42,13 @@ private:
     
     // camera info parameters
     bool got_camera_info_;
-    cv::Mat camera_matrix_, dist_coeffs_;
+    Mat camera_matrix_, dist_coeffs_;
     ros::Subscriber camera_info_sub_;
 
     // last camera pose
     bool got_camera_pose_;
-    cv::Vec3d camera_position_; // x,y,z
-    cv::Vec4d camera_orientation_; // quaternion x,y,z,w
+    Vec3d camera_position_; // x,y,z
+    Vec4d camera_orientation_; // quaternion x,y,z,w
 
     // is running ?
     bool is_tracking_running_;
