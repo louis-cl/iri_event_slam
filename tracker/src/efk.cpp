@@ -25,6 +25,8 @@ void EFK::predict(double dt) {
         w = w
     */
     Quaternion q = X_.q; // store old orientation
+    // should I normalize to prevents my quaternion to blow up ?
+    // normalizing probably implies changing P (scale change) q = q/|q| 
 
     // update state X_
     X_.r += X_.v * dt;
@@ -36,7 +38,7 @@ void EFK::predict(double dt) {
     // update covariance P_
     /*
     F_x =   1       0       dt      0 
-            0       Fq_q    0       Fw_q
+            0       Fq_q    0       Fq_w
             0       0       1       0
             0       0       0       1
     */
@@ -78,6 +80,19 @@ void EFK::predict(double dt) {
     F_x.block<4,3>(3,10) = quaternionProductMatrix(q) * JacQuaternion_w;
 
     P_ = F_x * P_ * F_x.transpose() + Q_ * dt;
+
+    /*
+        This could be improved by reordering variables r,q,v,w -> r,v,q,w
+        
+        F_x is then block diagonal :  F1 0 ; 0 F2
+        F1 = 1 dt; 0 1   and    F2 = Fq_q Fq_w; 0 1
+        
+        P update can be simplified:
+        P by blocks P1 P2; P2' P3 then
+            P1 = F1*P1*F1'
+            P2 = F1*P2*F2'
+            P3 = F2*P3*F2'
+    */
 }
 
 Mat4 EFK::quaternionProductMatrix(const Quaternion& q, bool left) {
