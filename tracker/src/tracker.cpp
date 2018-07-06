@@ -50,6 +50,7 @@ void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
 }
 
 void Tracker::cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    if (!got_camera_pose_) ROS_INFO("got camera pose");
     got_camera_pose_ = true;
     camera_position_ = Vec3d(msg->pose.position.x,
                                  msg->pose.position.y,
@@ -63,11 +64,29 @@ void Tracker::cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg
 
 void Tracker::resetCallback(const std_msgs::Bool::ConstPtr& msg) {
     ROS_DEBUG("received reset callback!");
+    // create initial state from last camera pose
+    EFK::State X0;
+    X0.r << camera_position_[0], camera_position_[1], camera_position_[2];
+    X0.q = Quaternion(camera_orientation_[0],
+                      camera_orientation_[1],
+                      camera_orientation_[2],
+                      camera_orientation_[3]);
+    X0.v << 0,0,0;
+    X0.w = AngleAxis(0, Vec3::UnitZ());
+    efk_.init(X0);
+
+    // put flag at then so that efk is initialized
+    is_tracking_running_ = true;
 }
 
 void Tracker::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg) {
     ROS_DEBUG("got an event array of size %lu", msg->events.size());
-    if (!is_tracking_running_) return;
+    if (!(is_tracking_running_ and got_camera_pose_ and got_camera_info_)) return;
+    // handle tracking
+    ROS_INFO("I started tracking !!");
+    for (int i = 0; i < msg->events.size(); ++i) {
+        dvs_msgs::Event e = msg->events[i];
+    }
 }
 
 } // namespace
