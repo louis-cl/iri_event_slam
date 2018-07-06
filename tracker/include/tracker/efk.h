@@ -2,12 +2,17 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <cmath>
 
 using Vec3 = Eigen::Vector3d;
+using Vec4 = Eigen::Vector4d;
 using Quaternion = Eigen::Quaterniond;
 using AngleAxis = Eigen::AngleAxisd;
 using Mat13 = Eigen::Matrix<double, 13, 13>;
 using Mat4 = Eigen::Matrix<double, 4, 4>;
+
+using std::sin;
+using std::cos;
 
 namespace track {
 
@@ -25,14 +30,14 @@ public:
     EFK(const Vec3& sigma_v, const Vec3& sigma_w, double sigma_d);
 
     // initialize state
-    void init(const EFK::State& X0);
+    void init(const EFK::State& X0, const Mat13& = Mat13::Zero());
     // predict the next state after dt seconds
     void predict(double dt);
     //void correct(double dist);
 
 
     Mat13 Q_; // motion uncertainty per second
-private:
+//private:
     State X_;  // state
     Mat13 P_; // state covariance in order [r q v w]
 
@@ -41,6 +46,7 @@ private:
 
     // q1 . q2 = [q2]r * q1  = [q1]l * q2
     // returns [q]l if left else [q]r
+    // variables order is w,x,y,z
     Mat4 quaternionProductMatrix(const Quaternion& q, bool left = true);
 };
 

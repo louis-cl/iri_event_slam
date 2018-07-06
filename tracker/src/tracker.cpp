@@ -10,7 +10,19 @@ Tracker::Tracker(ros::NodeHandle & nh) : nh_(nh) {
 
   // setup efk
   efk_ = EFK(sigma_v, sigma_w, sigma_d);
-  ROS_INFO_STREAM("init efk Q is \n" << efk_.Q_);
+
+// **** DEBUG ****
+//   EFK::State X0;
+//   X0.r << 0,0,0;
+//   X0.q = Quaternion(1,0,0,0);
+//   X0.v << 1,0,0;
+//   X0.w = AngleAxis(0, Vec3::UnitX());
+//   efk_.init(X0);
+//   ROS_INFO_STREAM(" init X0 is \n" << "r:" << efk_.X_.r.transpose() << ',' <<
+//         "\nq:" << efk_.X_.q.coeffs().transpose() << ',' <<
+//         "\nv:" << efk_.X_.v.transpose() << ',' <<
+//         "\nw:" << efk_.X_.w.angle() << '-' << efk_.X_.w.axis().transpose());
+//   ROS_INFO_STREAM(" init P is \n" << efk_.P_);
 
   // setup subscribers and publishers
   camera_info_sub_ = nh_.subscribe("camera_info", 1, &Tracker::cameraInfoCallback, this);
