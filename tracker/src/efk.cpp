@@ -95,6 +95,10 @@ void EFK::predict(double dt) {
     */
 }
 
+EFK::State EFK::getState() {
+    return X_;
+}
+
 Mat4 EFK::quaternionProductMatrix(const Quaternion& q, bool left) {
     return left ?
         (Mat4() << q.w(), -q.x(), -q.y(), -q.z(),

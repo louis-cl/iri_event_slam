@@ -8,9 +8,8 @@ Tracker::Tracker(ros::NodeHandle & nh) : nh_(nh) {
   got_camera_pose_ = false;
   is_tracking_running_ = false;
 
-  // setup efk
   efk_ = EFK(sigma_v, sigma_w, sigma_d);
-
+  
 // **** DEBUG ****
 //   EFK::State X0;
 //   X0.r << 0,0,0;
@@ -37,14 +36,13 @@ void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
   ROS_INFO("got camera info");
   got_camera_info_ = true;
 
-  camera_matrix_ = Mat(3, 3, CV_64F);
-  for (int i = 0; i < 3; i++)
-    for (int j = 0; j < 3; j++)
-      camera_matrix_.at<double>(cv::Point(i, j)) = msg->K[i+j*3];
+  // K is row-major matrix
+  camera_matrix_ << msg->K[0], msg->K[4], msg->K[2], msg->K[5];
 
-  dist_coeffs_ = Mat(msg->D.size(), 1, CV_64F);
-  for (int i = 0; i < msg->D.size(); i++)
-    dist_coeffs_.at<double>(i) = msg->D[i];
+// ignoring distortion for now
+//   dist_coeffs_ = Mat(msg->D.size(), 1, CV_64F);
+//   for (int i = 0; i < msg->D.size(); i++)
+//     dist_coeffs_.at<double>(i) = msg->D[i];
 
   camera_info_sub_.shutdown();
 }
@@ -52,31 +50,31 @@ void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
 void Tracker::cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     if (!got_camera_pose_) ROS_INFO("got camera pose");
     got_camera_pose_ = true;
-    camera_position_ = Vec3d(msg->pose.position.x,
+    camera_position_ = Vec3(msg->pose.position.x,
                                  msg->pose.position.y,
                                  msg->pose.position.z);
-    camera_orientation_ = Vec4d(msg->pose.orientation.x,
+    camera_orientation_ = Quaternion(msg->pose.orientation.w,
+                                    msg->pose.orientation.x,
                                     msg->pose.orientation.y,
-                                    msg->pose.orientation.z,
-                                    msg->pose.orientation.w);
-    ROS_DEBUG_STREAM("got pose " << camera_position_ << " and orientation " << camera_orientation_);
+                                    msg->pose.orientation.z);
+    ROS_DEBUG_STREAM("got pose " << camera_position_ << " and orientation " << camera_orientation_.coeffs());
 }
 
 void Tracker::resetCallback(const std_msgs::Bool::ConstPtr& msg) {
     ROS_INFO("received reset callback!");
     // create initial state from last camera pose
     EFK::State X0;
-    X0.r << camera_position_[0], camera_position_[1], camera_position_[2];
-    X0.q = Quaternion(camera_orientation_[0],
-                      camera_orientation_[1],
-                      camera_orientation_[2],
-                      camera_orientation_[3]);
-    X0.v << 0,0,0;
+    X0.r = camera_position_;
+    X0.q = camera_orientation_;
+    X0.v = Vec3::Zero();
     X0.w = AngleAxis(0, Vec3::UnitZ());
     efk_.init(X0);
 
     // reset time
     last_event_ts = ros::Time(0);
+
+    // project map
+    map_.projectAll(camera_position_, camera_orientation_, camera_matrix_);
 
     // put flag at then so that efk is initialized
     is_tracking_running_ = true;
@@ -100,11 +98,16 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
     double dt = (e.ts - last_event_ts).toSec();
     ROS_DEBUG_STREAM(" event: dt = " << dt);
     efk_.predict(dt);
-    // associate event to a segment in projected map
-    
-    // reproject associated segment
 
+    Point2d eventPoint(e.x, e.y);
+    // associate event to a segment in projected map
+    const uint segmentId = map_.getNearest(eventPoint);
+    // reproject associated segment
+    EFK::State S = efk_.getState();
+    map_.project(segmentId, S.r, S.q, camera_matrix_);
     // compute innovation (distance) and jacobian
+    const double dist = map_.getDistance(eventPoint, segmentId);
+    // TODO should get jacobians from somewhere
 
     // update state in efk
 

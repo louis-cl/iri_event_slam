@@ -34,14 +34,16 @@ public:
     // predict the next state after dt seconds
     void predict(double dt);
     //void correct(double dist);
-
-
-    Mat13 Q_; // motion uncertainty per second
+    
+    // get current state
+    EFK::State getState();
+    
 //private:
     State X_;  // state
     Mat13 P_; // state covariance in order [r q v w]
 
     // UNCERTAINTY CONSTANTS
+    Mat13 Q_; // motion uncertainty per second
     double R_; // measurement noise
 
     // q1 . q2 = [q2]r * q1  = [q1]l * q2
