@@ -72,7 +72,7 @@ void EFK::predict(double dt) {
     if (theta >= 1e-6) {
         JacQuaternion_w = dt/2 *
             (Vec4() << -sin(theta/2), cos(theta/2)*u).finished() * u.transpose();
-        JacQuaternion_w.block<3,3>(1,0).diagonal().array() += dt/theta;
+        JacQuaternion_w.block<3,3>(1,0).diagonal().array() += 1/X_.w.angle(); // dt/theta
     } else {
         JacQuaternion_w << -dt/2 * X_.w.axis(), 1,0,0, 0,1,0, 0,0,1;
         JacQuaternion_w *= dt/2;

@@ -24,8 +24,8 @@ public:
     virtual ~Tracker();
     
     // uncertainty in movement per second
-    Eigen::Vector3d sigma_v = (Eigen::Vector3d() << 2, 2, 2).finished();
-    Eigen::Vector3d sigma_w = (Eigen::Vector3d() << 2, 2, 2).finished();
+    const Eigen::Vector3d sigma_v = (Eigen::Vector3d() << 2, 2, 2).finished();
+    const Eigen::Vector3d sigma_w = (Eigen::Vector3d() << 2, 2, 2).finished();
     //const Vec3 sigma_v((Eigen::Matrix3d() << 2,2,2).finished());
     //const Vec3 sigma_w((Vec3() << 2,2,2).finished());
     // uncertainty in measurement of pixel-segment distance
@@ -59,6 +59,10 @@ private:
     ros::Subscriber reset_sub_;
     // get events
     ros::Subscriber event_sub_;
+
+    // TRACKING VARIABLES
+    ros::Time last_event_ts;
+    void handleEvent(const dvs_msgs::Event &e);
 };
 
 }

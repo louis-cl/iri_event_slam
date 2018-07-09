@@ -63,7 +63,7 @@ void Tracker::cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg
 }
 
 void Tracker::resetCallback(const std_msgs::Bool::ConstPtr& msg) {
-    ROS_DEBUG("received reset callback!");
+    ROS_INFO("received reset callback!");
     // create initial state from last camera pose
     EFK::State X0;
     X0.r << camera_position_[0], camera_position_[1], camera_position_[2];
@@ -75,6 +75,9 @@ void Tracker::resetCallback(const std_msgs::Bool::ConstPtr& msg) {
     X0.w = AngleAxis(0, Vec3::UnitZ());
     efk_.init(X0);
 
+    // reset time
+    last_event_ts = ros::Time(0);
+
     // put flag at then so that efk is initialized
     is_tracking_running_ = true;
 }
@@ -83,10 +86,28 @@ void Tracker::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg) {
     ROS_DEBUG("got an event array of size %lu", msg->events.size());
     if (!(is_tracking_running_ and got_camera_pose_ and got_camera_info_)) return;
     // handle tracking
-    ROS_INFO("I started tracking !!");
     for (int i = 0; i < msg->events.size(); ++i) {
-        dvs_msgs::Event e = msg->events[i];
+        handleEvent(msg->events[i]);
     }
+}
+
+void Tracker::handleEvent(const dvs_msgs::Event &e) {
+    if (last_event_ts.isZero()) { // first event
+        last_event_ts = e.ts;
+        return;
+    }
+    // predict
+    double dt = (e.ts - last_event_ts).toSec();
+    ROS_DEBUG_STREAM(" event: dt = " << dt);
+    efk_.predict(dt);
+    // associate event to a segment in projected map
+    
+    // reproject associated segment
+
+    // compute innovation (distance) and jacobian
+
+    // update state in efk
+
 }
 
 } // namespace
