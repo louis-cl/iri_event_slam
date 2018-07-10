@@ -2,6 +2,8 @@
 #include <vector>
 #include <Eigen/Dense>
 
+#include "slam_line.h"
+
 using std::vector;
 using Point2d = Eigen::Vector2d;
 using Point3d = Eigen::Vector3d;
@@ -13,13 +15,6 @@ namespace track
 {
 class TrackerMap {
     public:
-        struct Segment2D {
-            Point2d p1, p2;
-        };
-        struct Segment3D {
-            Point3d p1, p2;
-        };
-
         TrackerMap();
         
         // project all 3d segment to the 2d map
@@ -38,8 +33,7 @@ class TrackerMap {
         uint getNearest(const Point2d &p);
 
     private:
-        vector<Segment3D> world_map_;
-        vector<Segment2D> camera_map_;
+        vector<SlamLine> map_;
 };
 
 }

@@ -14,6 +14,7 @@ cs_add_executable(tracker
   src/tracker_node.cpp
   src/tracker_map.cpp
   src/efk.cpp
+  src/slam_line.cpp
 )
 
 target_link_libraries(tracker

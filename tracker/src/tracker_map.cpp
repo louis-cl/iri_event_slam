@@ -14,29 +14,36 @@ TrackerMap::TrackerMap() {
     for(int i = 0; i < 4; ++i) {
         Point3d p1 = model_points[i];
         Point3d p2 = model_points[(i+1) % 4];
-        world_map_.push_back(TrackerMap::Segment3D {p1,p2});
+        map_.push_back(SlamLine(p1,p2));
     }
 }
 void TrackerMap::projectAll(const Vec3& camera_position,
                             const Quaternion& camera_orientation,
                             const Vec4& camera_matrix) {
-
-
+    for (SlamLine& sl : map_)
+        sl.project(camera_position, camera_orientation, camera_matrix);
 }
 
 void TrackerMap::project(uint s_id,
     const Vec3& camera_position,
     const Quaternion& camera_orientation,
     const Vec4& camera_matrix) {
-    
+    map_[s_id].project(camera_position, camera_orientation, camera_matrix);
 }
 
 double TrackerMap::getDistance(const Point2d &p, uint s_id) {
-
+    return SlamLine::getDistance(map_[s_id], p);
 }
 
-uint TrackerMap::getNearest(const Point2d &p) {
 
+uint TrackerMap::getNearest(const Point2d &p) {
+    uint best_id = 0;
+    double best_distance = SlamLine::getDistance(map_[0], p);
+    for (int i = 1; i < map_.size(); ++i) {
+        double distance_i = SlamLine::getDistance(map_[i], p);
+        if (distance_i < best_distance) best_id = i;
+    }
+    return best_id;
 }
 
 }
