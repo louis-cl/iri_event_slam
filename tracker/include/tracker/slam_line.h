@@ -1,5 +1,8 @@
 #pragma once
 #include <Eigen/Dense>
+#include <cmath>
+
+using std::sqrt;
 
 using Point2d = Eigen::Vector2d;
 using Point3d = Eigen::Vector3d;
@@ -19,7 +22,9 @@ class SlamLine {
 
         // get distance between a SlamLine and a 2d point
         static double getDistance(const SlamLine& s, const Point2d& p);
-    
+        // get distance with jacobians
+        static double getDistance(const SlamLine& s, const Point2d& p,
+                                   Eigen::RowVector3d& jac_d_r, Eigen::RowVector4d& jac_d_q);
         // world coordinates points
         Point3d p1_3d;
         Point3d p2_3d;
