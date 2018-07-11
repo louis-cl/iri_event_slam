@@ -28,12 +28,12 @@ class SlamLine {
         Point2d p1_2d;
         Point2d p2_2d;
         
-        // homogeneous coordinates
-        Point2d line_2d;
+        // homogeneous coordinates of line joining p1_2d, p2_2d
+        Point3d line_2d;
 
         // Jacobian of line_2d wrt to position and orientation in project
-        Eigen::Matrix<double, 2, 3> jac_line_2d_r;
-        Eigen::Matrix<double, 2, 4> jac_line_2d_q;
+        Eigen::Matrix<double, 3, 3> jac_line_2d_r;
+        Eigen::Matrix<double, 3, 4> jac_line_2d_q;
 };
 
 } // namespace

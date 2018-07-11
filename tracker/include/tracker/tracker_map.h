@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <Eigen/Dense>
+#include <Eigen/Geometry> 
 
 #include "slam_line.h"
 
@@ -21,6 +22,7 @@ class TrackerMap {
         void projectAll(const Vec3& camera_position,
                         const Quaternion& camera_orientation,
                         const Vec4& camera_matrix);
+        
         // project a 3d segment to the 2d map
         void project(uint s_id,
             const Vec3& camera_position,

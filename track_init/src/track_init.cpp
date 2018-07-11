@@ -91,6 +91,15 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     std::cout << "Rotation Vector " << std::endl << rotation_vector << std::endl;
     std::cout << "Translation Vector" << std::endl << translation_vector << std::endl;
     
+    // OPENCV assumes frameCoordinates = R * worldCoordinates + t 
+    // camera position = - R' * t
+    // camera orientation = R'
+    cv::Mat R;
+    cv::Rodrigues(rotation_vector, R);
+    R = R.t();
+    translation_vector = -R * translation_vector;
+    cv::Rodrigues(R, rotation_vector);
+
     cv::Point3d pos(translation_vector);
     cv::Point3d rot(rotation_vector);
 
