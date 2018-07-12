@@ -101,16 +101,26 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
 
     Point2d eventPoint(e.x, e.y);
     // associate event to a segment in projected map
-    const uint segmentId = map_.getNearest(eventPoint);
+    double dist;
+    const uint segmentId = map_.getNearest(eventPoint, dist);
+    ROS_INFO_STREAM("observed distance " << dist << " to segment " << segmentId);
+    
     // reproject associated segment
     EFK::State S = efk_.getState();
     map_.project(segmentId, S.r, S.q, camera_matrix_);
-    // compute innovation (distance) and jacobian
-    const double dist = map_.getDistance(eventPoint, segmentId);
-    // TODO should get jacobians from somewhere
+    
+    
+    if (abs(dist) >= THRESHOLD_MATCHING_DIST) return;
 
+    // compute measurement (distance) and jacobian
+    Eigen::RowVector3d jac_d_r;
+    Eigen::RowVector4d jac_d_q;
+    dist = map_.getDistance(eventPoint, segmentId, jac_d_r, jac_d_q);
+    Eigen::Matrix<double, 1, 7> H;
+    H << jac_d_r, jac_d_q;
+    
     // update state in efk
-
+    efk_.update(dist, H);
 }
 
 } // namespace

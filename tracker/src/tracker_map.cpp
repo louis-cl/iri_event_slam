@@ -35,15 +35,27 @@ double TrackerMap::getDistance(const Point2d &p, uint s_id) {
     return SlamLine::getDistance(map_[s_id], p);
 }
 
+double TrackerMap::getDistance(const Point2d& p, uint s_id,
+                Eigen::RowVector3d& jac_d_r, Eigen::RowVector4d& jac_d_q) {
+    return SlamLine::getDistance(map_[s_id], p, jac_d_r, jac_d_q);
+}
 
-uint TrackerMap::getNearest(const Point2d &p) {
+uint TrackerMap::getNearest(const Point2d &p, double &best_distance) {
     uint best_id = 0;
-    double best_distance = SlamLine::getDistance(map_[0], p);
+    best_distance = SlamLine::getDistance(map_[0], p);
     for (int i = 1; i < map_.size(); ++i) {
         double distance_i = SlamLine::getDistance(map_[i], p);
-        if (distance_i < best_distance) best_id = i;
+        if (distance_i < best_distance) {
+            best_id = i;
+            best_distance = distance_i;
+        }
     }
     return best_id;
+}
+
+uint TrackerMap::getNearest(const Point2d &p) {
+    double d;
+    return getNearest(p, d);
 }
 
 }

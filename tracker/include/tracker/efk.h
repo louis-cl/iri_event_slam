@@ -33,7 +33,8 @@ public:
     void init(const EFK::State& X0, const Mat13& = Mat13::Zero());
     // predict the next state after dt seconds
     void predict(double dt);
-    //void correct(double dist);
+    // update state after distance measurement
+    void update(double dist, const Eigen::Matrix<double, 1, 7>& H);
     
     // get current state
     EFK::State getState();

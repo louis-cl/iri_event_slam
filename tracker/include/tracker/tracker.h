@@ -27,10 +27,10 @@ public:
     // uncertainty in movement per second
     const Vec3 sigma_v = (Eigen::Vector3d() << 2, 2, 2).finished();
     const Vec3 sigma_w = (Eigen::Vector3d() << 2, 2, 2).finished();
-    //const Vec3 sigma_v((Eigen::Matrix3d() << 2,2,2).finished());
-    //const Vec3 sigma_w((Vec3() << 2,2,2).finished());
     // uncertainty in measurement of pixel-segment distance
     const double sigma_d    = 0.5;
+    // maximum distance to match event to line
+    const double THRESHOLD_MATCHING_DIST = 2;
 
 private:
     ros::NodeHandle nh_;
