@@ -55,11 +55,6 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     cv::cvtColor(cv_ptr->image, img, CV_GRAY2BGR);
     // add square
     cv::polylines(img, square, true, cv::Scalar(0,0,255), 3, cv::LINE_AA);
-    // and publish result
-    cv_bridge::CvImage cv_image;
-    img.copyTo(cv_image.image);
-    cv_image.encoding = "bgr8";
-    image_pub_.publish(cv_image.toImageMsg());
 
     // TEMPORAL code here to get camera position
     // assuming square to be 85x85mm centered in Z = 0 plane
@@ -67,16 +62,22 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
 
     // sort point clockwise
     sortPointsCW(square);
-
     std::cout << "sorted points:" << square << std::endl;
 
-    float hw = 0.085/2; // half width of square
+    for (int i = 0; i < 4; ++i) {
+        cv::Point &p = square[i];
+
+        cv::circle(img, p, 1, CV_RGB(0,0,255),5);
+        cv::putText(img, std::to_string(i+1), p, cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,143,143), 2);
+    }
+
+    float hw = 85.0f/2; // half width of square
     // now estimate camera position
     std::vector<cv::Point3d> model_points {
       cv::Point3f(-hw, -hw, 0.0f),
-      cv::Point3f(-hw,  hw, 0.0f),
       cv::Point3f( hw, -hw, 0.0f),
-      cv::Point3f( hw,  hw, 0.0f)
+      cv::Point3f( hw,  hw, 0.0f),
+      cv::Point3f(-hw,  hw, 0.0f)
     };
 
     std::vector<cv::Point2d> image_points;
@@ -84,13 +85,25 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
 
     cv::Mat rotation_vector; // Rotation in axis-angle form
     cv::Mat translation_vector;
-    cv::solvePnP(model_points, image_points, camera_matrix_, dist_coeffs_, rotation_vector, translation_vector, false, cv::SOLVEPNP_AP3P);
+    cv::solvePnP(model_points, image_points, camera_matrix_, dist_coeffs_,
+      rotation_vector, translation_vector, false, cv::SOLVEPNP_ITERATIVE);
 
     std::cout << "model points" << cv::Mat(model_points) << "\nimage points:" << cv::Mat(image_points) << std::endl;
 
     std::cout << "Rotation Vector " << std::endl << rotation_vector << std::endl;
     std::cout << "Translation Vector" << std::endl << translation_vector << std::endl;
     
+    // reproject points
+    std::vector<cv::Point2d> proj_image_points;
+    cv::projectPoints(model_points, rotation_vector, translation_vector, camera_matrix_, dist_coeffs_, proj_image_points);
+    ROS_INFO_STREAM("Points reprojected");
+    for (int i = 0; i < 4; ++i) {
+        cv::Point2d &p = proj_image_points[i];
+        ROS_INFO_STREAM("P" << i << ": " << p);
+        cv::circle(img, p, 1, CV_RGB(0,255,0),3);
+    }
+
+
     // OPENCV assumes frameCoordinates = R * worldCoordinates + t 
     // camera position = - R' * t
     // camera orientation = R'
@@ -127,6 +140,11 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     }
     poseStampedPub.publish(poseStamped);
 
+    // publish image with anotations
+    cv_bridge::CvImage cv_image;
+    img.copyTo(cv_image.image);
+    cv_image.encoding = "bgr8";
+    image_pub_.publish(cv_image.toImageMsg());
   } else {
     image_pub_.publish(msg);
   }

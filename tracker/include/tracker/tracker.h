@@ -41,6 +41,8 @@ private:
     void cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void resetCallback(const std_msgs::Bool::ConstPtr& msg);
     void eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg);
+
+    void publishTrackedPose(const EFK::State& S);
     
     // camera info parameters
     bool got_camera_info_;
@@ -62,6 +64,8 @@ private:
     ros::Subscriber reset_sub_;
     // get events
     ros::Subscriber event_sub_;
+    // publish pose
+    ros::Publisher pose_pub_;
 
     // TRACKING VARIABLES
     ros::Time last_event_ts;

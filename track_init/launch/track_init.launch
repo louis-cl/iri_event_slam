@@ -4,7 +4,7 @@
   <node name="davis_ros_driver" pkg="davis_ros_driver" type="davis_ros_driver" />
 
   <!-- visualization -->
-  <node name="track_init" pkg="track_init" type="track_init">
+  <node name="track_init" pkg="track_init" type="track_init" output="screen">
     <remap from="image" to="/dvs/image_raw" />
     <remap from="rendering" to="/track/init_rendering" />
     <remap from="pose" to="/track/init_pose" />

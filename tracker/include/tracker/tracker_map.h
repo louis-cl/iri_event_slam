@@ -7,6 +7,7 @@
 
 using std::vector;
 using std::abs;
+
 using Point2d = Eigen::Vector2d;
 using Point3d = Eigen::Vector3d;
 using Vec3 = Eigen::Vector3d;

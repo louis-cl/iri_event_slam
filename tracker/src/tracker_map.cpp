@@ -4,7 +4,7 @@ namespace track
 {
 TrackerMap::TrackerMap() {
     // setup known map, UGLY CODE, do this outside...
-    const double hw = 0.085/2;
+    const double hw = 85.0f/2;
     vector<Point3d> model_points {
         Point3d(-hw, -hw, 0.0f),
         Point3d(-hw,  hw, 0.0f),
@@ -42,9 +42,9 @@ double TrackerMap::getDistance(const Point2d& p, uint s_id,
 
 uint TrackerMap::getNearest(const Point2d &p, double &best_distance) {
     uint best_id = 0;
-    best_distance = SlamLine::getDistance(map_[0], p);
+    best_distance = abs(SlamLine::getDistance(map_[0], p));
     for (int i = 1; i < map_.size(); ++i) {
-        double distance_i = SlamLine::getDistance(map_[i], p);
+        double distance_i = abs(SlamLine::getDistance(map_[i], p));
         if (distance_i < best_distance) {
             best_id = i;
             best_distance = distance_i;
