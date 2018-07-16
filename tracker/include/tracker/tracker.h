@@ -1,13 +1,18 @@
 #pragma once
 #include <ros/ros.h>
 
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
 #include <std_msgs/Bool.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <dvs_msgs/Event.h>
 #include <dvs_msgs/EventArray.h>
 
 #include <Eigen/Dense>
+#include <opencv2/opencv.hpp>
 
 #include "efk.h"
 #include "tracker_map.h"
@@ -64,8 +69,12 @@ private:
     ros::Subscriber reset_sub_;
     // get events
     ros::Subscriber event_sub_;
+    
+    // VISUALIZATION
     // publish pose
     ros::Publisher pose_pub_;
+    // debug event association
+    image_transport::Publisher event_map_pub_;
 
     // TRACKING VARIABLES
     ros::Time last_event_ts;

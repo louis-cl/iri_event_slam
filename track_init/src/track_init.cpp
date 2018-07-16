@@ -10,7 +10,7 @@ TrackInit::TrackInit(ros::NodeHandle & nh) : nh_(nh) {
   image_transport::ImageTransport it_(nh_);
   image_sub_ = it_.subscribe("image", 1, &TrackInit::imageCallback, this);
   image_pub_ = it_.advertise("rendering", 1);
-  poseStampedPub = nh.advertise<geometry_msgs::PoseStamped>("pose", 2, true);
+  poseStampedPub = nh_.advertise<geometry_msgs::PoseStamped>("pose", 2, true);
 }
 
 TrackInit::~TrackInit() {

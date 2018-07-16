@@ -89,7 +89,7 @@ double SlamLine::getDistance(const SlamLine& s, const Point2d& p) {
     // d = (ax + by + c)/|(a,b)|   where a,b,c = line_2d homogeneous
     double a = s.line_2d[0];
     double b = s.line_2d[1];
-    double c = s.line_2d[1];
+    double c = s.line_2d[2];
     return (a*p[0] + b*p[1] + c)/sqrt(a*a + b*b);
 }
 
@@ -97,7 +97,7 @@ double SlamLine::getDistance(const SlamLine& s, const Point2d& p,
                                  Eigen::RowVector3d& jac_d_r, Eigen::RowVector4d& jac_d_q) {
     double a = s.line_2d[0];
     double b = s.line_2d[1];
-    double c = s.line_2d[1];
+    double c = s.line_2d[2];
 
     double x = p[0];
     double y = p[1];

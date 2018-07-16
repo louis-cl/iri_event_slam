@@ -46,8 +46,30 @@ TEST(Slamline, CameraFrameIsAtWorldFrame){
     EXPECT_DOUBLE_EQ(-1, sl.p2_2d[1]);
 }
 
+TEST(SlamLine, Line1) {
+    Point3d p1(1,0,1); // 1,0
+    Point3d p2(4,0,2); // 2,0
+    SlamLine sl = SlamLine(p1, p2);
+    // world frame = camera frame
+    sl.project(Vec3(0,0,0), Quaternion(1,0,0,0), Vec4(1,1,0,0));
+    EXPECT_DOUBLE_EQ(0, sl.line_2d[0]);
+    EXPECT_DOUBLE_EQ(1, sl.line_2d[1]);
+    EXPECT_DOUBLE_EQ(0, sl.line_2d[2]);
+}
+
+TEST(SlamLine, Distance) {
+    Point3d p1(1,0,1); // 1,0
+    Point3d p2(4,0,2); // 2,0
+    SlamLine sl = SlamLine(p1, p2);
+    // world frame = camera frame
+    sl.project(Vec3(0,0,0), Quaternion(1,0,0,0), Vec4(1,1,0,0));
+    EXPECT_DOUBLE_EQ(0, SlamLine::getDistance(sl, Point2d(1,0)));
+    EXPECT_DOUBLE_EQ(0, SlamLine::getDistance(sl, Point2d(5,0)));
+    EXPECT_DOUBLE_EQ(1, SlamLine::getDistance(sl, Point2d(5,1)));
+}
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+

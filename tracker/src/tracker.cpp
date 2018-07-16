@@ -29,10 +29,15 @@ Tracker::Tracker(ros::NodeHandle & nh) : nh_(nh) {
   reset_sub_ = nh_.subscribe("reset", 1, &Tracker::resetCallback, this);
   event_sub_ = nh_.subscribe("events", 1, &Tracker::eventsCallback, this);
 
-  pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("tracked_pose", 2, true);
+  pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("tracked_pose", 2, true);
+  image_transport::ImageTransport it_(nh_);
+  event_map_pub_ = it_.advertise("map_events", 1);
 }
 
-Tracker::~Tracker() {}
+Tracker::~Tracker() {
+    pose_pub_.shutdown();
+    event_map_pub_.shutdown();
+}
 
 void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
   ROS_INFO("got camera info");
@@ -121,28 +126,46 @@ void displayState(EFK::State S) {
     );
 }
 
+
 void Tracker::handleEvent(const dvs_msgs::Event &e) {
     if (last_event_ts.isZero()) { // first event
         last_event_ts = e.ts;
         return;
     }
-
     // predict
     double dt = (e.ts - last_event_ts).toSec();
     last_event_ts = e.ts;
-    ROS_INFO_STREAM(" event: dt = " << dt);
+    Point2d eventPoint(e.x, e.y);
+    ROS_INFO_STREAM("###############################\n"
+                    "### EVENT [" << e.x << ',' << e.y << "] dt=" << dt);
     
-    ROS_INFO("* before prediction");
+    ROS_INFO("# before prediction");
     displayState(efk_.getState());
     efk_.predict(dt);
-    ROS_INFO("* after prediction");
+    ROS_INFO("# after prediction");
     displayState(efk_.getState());
 
-    Point2d eventPoint(e.x, e.y);
     // associate event to a segment in projected map
     double dist;
     const uint segmentId = map_.getNearest(eventPoint, dist);
-    ROS_INFO_STREAM("observed distance " << dist << " to segment " << segmentId);
+    ROS_INFO_STREAM("event is at distance " << dist << ", segment " << segmentId);
+
+    // publish map with event
+    // get projected map
+    cv::Mat map_event = map_.get2dMap(180, 240);
+    // add event
+    cv::drawMarker(map_event, cv::Point(e.x, e.y), CV_RGB(255,0,0), cv::MARKER_CROSS, 5, 1);
+    
+    cv::namedWindow("map event", cv::WINDOW_AUTOSIZE);
+    cv::imshow("map event", map_event);
+    cv::waitKey(0);
+
+    // convert and publish
+    cv_bridge::CvImage cv_image;
+    map_event.copyTo(cv_image.image);
+    cv_image.encoding = "bgr8";
+    event_map_pub_.publish(cv_image.toImageMsg());
+
 
     // reproject associated segment
     EFK::State S = efk_.getState();
@@ -160,7 +183,7 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
     
     // update state in efk
     efk_.update(dist, H);
-    ROS_INFO("* after update");
+    ROS_INFO("# after update");
     displayState(efk_.getState());
     publishTrackedPose(efk_.getState());
 }

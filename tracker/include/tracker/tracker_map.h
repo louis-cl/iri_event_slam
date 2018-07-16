@@ -1,8 +1,10 @@
 #pragma once
+#include <ros/ros.h>
 #include <vector>
+#include <cmath>
 #include <Eigen/Dense>
 #include <Eigen/Geometry> 
-#include <cmath>
+#include <opencv2/opencv.hpp>
 #include "slam_line.h"
 
 using std::vector;
@@ -40,6 +42,9 @@ class TrackerMap {
         // get id of the nearest segment to a 2d point in the 2d map
         uint getNearest(const Point2d &p);
         uint getNearest(const Point2d &p, double &best_distance);
+
+        // return a 2d map segments in green, black background
+        cv::Mat get2dMap(uint h, uint w);
 
     private:
         vector<SlamLine> map_;

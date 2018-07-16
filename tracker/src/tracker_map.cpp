@@ -7,9 +7,9 @@ TrackerMap::TrackerMap() {
     const double hw = 85.0f/2;
     vector<Point3d> model_points {
         Point3d(-hw, -hw, 0.0f),
-        Point3d(-hw,  hw, 0.0f),
         Point3d( hw, -hw, 0.0f),
-        Point3d( hw,  hw, 0.0f)
+        Point3d( hw,  hw, 0.0f),
+        Point3d( -hw,  hw, 0.0f)
     };
     for(int i = 0; i < 4; ++i) {
         Point3d p1 = model_points[i];
@@ -43,8 +43,10 @@ double TrackerMap::getDistance(const Point2d& p, uint s_id,
 uint TrackerMap::getNearest(const Point2d &p, double &best_distance) {
     uint best_id = 0;
     best_distance = abs(SlamLine::getDistance(map_[0], p));
+    ROS_INFO_STREAM("observed distance " << best_distance << " to segment 0");
     for (int i = 1; i < map_.size(); ++i) {
         double distance_i = abs(SlamLine::getDistance(map_[i], p));
+        ROS_INFO_STREAM("observed distance " << distance_i << " to segment " << i);
         if (distance_i < best_distance) {
             best_id = i;
             best_distance = distance_i;
@@ -56,6 +58,19 @@ uint TrackerMap::getNearest(const Point2d &p, double &best_distance) {
 uint TrackerMap::getNearest(const Point2d &p) {
     double d;
     return getNearest(p, d);
+}
+
+cv::Mat TrackerMap::get2dMap(uint h, uint w) {
+    cv::Mat img(h, w, CV_8UC3, cv::Scalar(0,0,0));
+    for (int i = 0; i < map_.size(); ++i) {
+        const SlamLine &sl = map_[i];
+        cv::Point p1(sl.p1_2d[0], sl.p1_2d[1]);
+        cv::Point p2(sl.p2_2d[0], sl.p2_2d[1]);
+        cv::line(img, p1, p2, CV_RGB(0,0,255), 2);
+        cv::Point p = (p1+p2) * 0.5;
+        cv::putText(img, std::to_string(i), p, cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0,125,255), 1);
+    }
+    return img;
 }
 
 }
