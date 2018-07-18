@@ -78,7 +78,7 @@ private:
     // image of map and events
     cv::Mat map_events_;
     // number of events to acumulate before publishing a map image
-    const uint PUBLISH_MAP_EVENTS_RATE = 50;
+    const uint PUBLISH_MAP_EVENTS_RATE = 100;
     uint event_counter_;
     void updateMapEvents(const dvs_msgs::Event &e, bool used = false);
 

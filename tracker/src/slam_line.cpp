@@ -53,10 +53,9 @@ void SlamLine::project(const Vec3& r, const Quaternion& q, const Vec4& K) {
         0,    fy/p[2],  -fy*p[1]/(p[2]*p[2])      
      ).finished();};
 
-    jac_line_2d_r = L_pw * (Eigen::Matrix<double, 4, 3>() <<
-            -PW_pc(p1_3d_c)*R,
-            -PW_pc(p2_3d_c)*R
-        ).finished();
+    jac_points_2d_rq.block<4,3>(0,0) << -PW_pc(p1_3d_c)*R,
+                                        -PW_pc(p2_3d_c)*R;
+    jac_line_2d_r = L_pw * jac_points_2d_rq.block<4,3>(0,0);
 
     // jacobian of line_2d wrt q
     /*
@@ -77,10 +76,9 @@ void SlamLine::project(const Vec3& r, const Quaternion& q, const Vec4& K) {
         sc[3], -sc[2],  sc[1],  sc[0]
      ).finished();};
 
-    jac_line_2d_q = L_pw * (Eigen::Matrix4d() <<
-        PW_pc(p1_3d_c)*TFq(2*PIqc*(p1_3d - r)),
-        PW_pc(p2_3d_c)*TFq(2*PIqc*(p2_3d - r))
-    ).finished();
+    jac_points_2d_rq.block<4,4>(0,3) << PW_pc(p1_3d_c)*TFq(2*PIqc*(p1_3d - r)),
+                                        PW_pc(p2_3d_c)*TFq(2*PIqc*(p2_3d - r));
+    jac_line_2d_q = L_pw * jac_points_2d_rq.block<4,4>(0,3);
 }
 
 double SlamLine::getDistance(const SlamLine& s, const Point2d& p,

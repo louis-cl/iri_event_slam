@@ -128,22 +128,25 @@ void Tracker::updateMapEvents(const dvs_msgs::Event &e, bool used) {
     // get projected map
     if (event_counter_ == 0)
         map_events_ = cv::Mat(180, 240, CV_8UC3, cv::Scalar(0,0,0));
-    // add event
+    // add event red if used, grey if not
     map_events_.at<cv::Vec3b>(cv::Point(e.x, e.y)) = (
-        used ? cv::Vec3b(0, 255, 255) : cv::Vec3b(0, 0, 255));
+        used ? cv::Vec3b(0, 0, 255) : cv::Vec3b(150, 150, 150));
         
     event_counter_++;
 
-    if (event_counter_ == PUBLISH_MAP_EVENTS_RATE) {
-        map_.draw2dMap(map_events_);
+    if (event_counter_ == PUBLISH_MAP_EVENTS_RATE or used) {
+        //map_.draw2dMap(map_events_);
+        map_.draw2dMapWithCov(map_events_, efk_.getCovariance().block<7,7>(0,0));
         // convert and publish tracked map
         cv_bridge::CvImage cv_image;
         map_events_.copyTo(cv_image.image);
         cv_image.encoding = "bgr8";
         event_map_pub_.publish(cv_image.toImageMsg());
         // display with pause
-        // cv::imshow("map events", map_events_);
-        // cv::waitKey(0);
+        if (used) {
+            cv::imshow("map events", map_events_);
+            cv::waitKey(0);
+        }
 
         event_counter_ = 0;
     }
@@ -167,9 +170,9 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
     // predict
     double dt = (e.ts - last_event_ts).toSec();
     last_event_ts = e.ts;
-    ROS_DEBUG_STREAM("###############################\n"
-                    "### EVENT [" << e.x << ',' << e.y << "] dt=" << dt);
-    
+    ROS_DEBUG("##############################");
+    ROS_DEBUG_STREAM("### EVENT [" << e.x << ',' << e.y << "] dt=" << dt);
+    ROS_DEBUG_STREAM("P diagonal" << efk_.getCovariance().diagonal().transpose());
     ROS_DEBUG("# before prediction");
     displayState(efk_.getState());
     efk_.predict(dt);

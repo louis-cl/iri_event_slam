@@ -38,6 +38,7 @@ public:
     
     // get current state
     EFK::State getState();
+    Mat13 getCovariance();
     
 //private:
     State X_;  // state

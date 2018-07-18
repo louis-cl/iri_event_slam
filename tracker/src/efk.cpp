@@ -127,6 +127,10 @@ EFK::State EFK::getState() {
     return X_;
 }
 
+Mat13 EFK::getCovariance() {
+    return P_;
+}
+
 Mat4 EFK::quaternionProductMatrix(const Quaternion& q, bool left) {
     return left ?
         (Mat4() << q.w(), -q.x(), -q.y(), -q.z(),

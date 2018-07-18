@@ -4,11 +4,14 @@
 #include <cmath>
 #include <Eigen/Dense>
 #include <Eigen/Geometry> 
+#include <Eigen/Eigenvalues>
 #include <opencv2/opencv.hpp>
 #include "slam_line.h"
 
 using std::vector;
 using std::abs;
+using std::atan2;
+using std::sqrt;
 
 using Point2d = Eigen::Vector2d;
 using Point3d = Eigen::Vector3d;
@@ -52,9 +55,13 @@ class TrackerMap {
 
         // draw the 2d map segments in green
         void draw2dMap(cv::Mat &img);
+        // draw the 2d map segments in green with their cov ellipse
+        void draw2dMapWithCov(cv::Mat &img, const Eigen::Matrix<double, 7, 7>& P);
 
     private:
         vector<SlamLine> map_;
+
+        cv::RotatedRect getErrorEllipse(double chisq, const Point2d &mean, const Eigen::Matrix2d& cov);
 };
 
 }

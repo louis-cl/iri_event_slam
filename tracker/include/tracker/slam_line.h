@@ -58,6 +58,8 @@ class SlamLine {
         // Jacobian of line_2d wrt to position and orientation in project
         Eigen::Matrix<double, 3, 3> jac_line_2d_r;
         Eigen::Matrix<double, 3, 4> jac_line_2d_q;
+        // covariance ellipse jacobian, 2d point wrt to position and orientation
+        Eigen::Matrix<double, 4, 7> jac_points_2d_rq;
 };
 
 } // namespace
