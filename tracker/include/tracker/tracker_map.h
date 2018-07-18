@@ -46,12 +46,7 @@ class TrackerMap {
             return SlamLine::getDistance(map_[s_id], p, jac_d_r, jac_d_q);
         }
 
-        // get id of the nearest segment to a 2d point in the 2d map
-        inline int getNearest(const Point2d &p) {
-            double d;
-            return getNearest(p, d);
-        }
-        int getNearest(const Point2d &p, double &best_distance);
+        int getNearest(const Point2d &p, double &best_distance, double threshold, double min_margin);
 
         // draw the 2d map segments in green
         void draw2dMap(cv::Mat &img);

@@ -31,18 +31,31 @@ void TrackerMap::project(int s_id,
     map_[s_id].project(camera_position, camera_orientation, camera_matrix);
 }
 
-int TrackerMap::getNearest(const Point2d &p, double &best_distance) {
+int TrackerMap::getNearest(const Point2d &p, double &best_distance, double threshold, double min_margin) {
     int best_id = -1;
+    int best_id2 = -1;
+    double best_distance2;
     for (int i = 0; i < map_.size(); ++i) {
         const SlamLine &sl = map_[i];
         if (SlamLine::isAligned(sl, p)) {
             double distance_i = SlamLine::getDistance(map_[i], p);
-            if (best_id == -1 or abs(distance_i) < abs(best_distance)) {
-                best_id = i;
-                best_distance = distance_i;
+            if (abs(distance_i) <= threshold) {
+                if (best_id == -1 or abs(distance_i) < abs(best_distance)) {
+                    // move best to 2nd best
+                    best_id2 = best_id;
+                    best_id = i;
+                    best_distance2 = best_distance;
+                    best_distance = distance_i;
+                } else if (best_id2 == -1 or abs(distance_i) < abs(best_distance2)) {
+                    // if we're not 1st maybe we are 2nd
+                    best_id2 = i;
+                    best_distance2 = distance_i;
+                }
             }
         }
     }
+    if (best_id2 == -1) return best_id; // no 2nd, 1st always
+    if (abs(best_distance) <= abs(best_distance2) + min_margin) return -2; // not sure about the segment
     return best_id;
 }
 

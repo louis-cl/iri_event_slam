@@ -182,12 +182,12 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
     // associate event to a segment in projected map
     double dist;
     Point2d eventPoint(e.x, e.y);
-    const int segmentId = map_.getNearest(eventPoint, dist);
+    const int segmentId = map_.getNearest(eventPoint, dist, MATCHING_DIST_THRESHOLD, MATCHING_DIST_MIN_MARGIN);
     
     ROS_DEBUG_STREAM("event is at distance " << dist << ", segment " << segmentId);
 
-    // no segment matched -> segmentId = -1  or too far
-    if (segmentId < 0 or abs(dist) >= THRESHOLD_MATCHING_DIST) {
+    // no segment matched
+    if (segmentId < 0) {
         updateMapEvents(e);
         return; // skip event
     }

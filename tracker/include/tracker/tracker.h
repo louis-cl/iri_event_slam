@@ -35,7 +35,9 @@ public:
     // uncertainty in measurement of pixel-segment distance
     const double sigma_d    = 0.5;
     // maximum distance to match event to line
-    const double THRESHOLD_MATCHING_DIST = 2;
+    const double MATCHING_DIST_THRESHOLD = 2;
+    // minimum margin between 1st and 2nd distance
+    const double MATCHING_DIST_MIN_MARGIN = 10;
 
 private:
     ros::NodeHandle nh_;
