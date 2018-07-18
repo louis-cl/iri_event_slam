@@ -97,18 +97,13 @@ void EFK::predict(double dt) {
 
 void EFK::update(double dist, const Eigen::Matrix<double, 1, 7>& H) {
     double z = -dist; // expected distance is 0
-    // real H = [H_r, H_q, H_v, H_w]
-    // but H_v = H_w = 0
+    // real H = [H_r, H_q, H_v, H_w] = [H_r, H_q, 0, 0]
     double Z = H * P_.block<7,7>(0,0) * H.transpose() + R_;
     // K = P H' / Z
     Eigen::Matrix<double, 13, 1> K = P_.block<13,7>(0,0) * H.transpose() / Z;
-/*
-x = x + K*z;
-x(4:7) = x(4:7)/norm(x(4:7));
-P = P-K*Z*K'; 
-*/
+
     // update state         x = x + K*z
-    X_.r += K.block<3,1>(0,0) * z;
+    X_.r += K.block<3,1>(0,0)*z;
     
     X_.q.w() += K(3,0)*z;
     X_.q.x() += K(4,0)*z;
@@ -118,7 +113,7 @@ P = P-K*Z*K';
 
     X_.v += K.block<3,1>(7,0) * z;
     
-    Vec3 new_axis = X_.w.angle()*X_.w.axis() + K.block<3,1>(10,0);
+    Vec3 new_axis = X_.w.angle()*X_.w.axis() + K.block<3,1>(10,0)*z;
     double new_angle = new_axis.norm();
     X_.w.angle() = new_angle;
     X_.w.axis() = new_axis / new_angle;

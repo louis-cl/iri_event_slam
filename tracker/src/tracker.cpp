@@ -17,17 +17,17 @@ Tracker::Tracker(ros::NodeHandle & nh) : nh_(nh) {
 //   X0.v << 1,0,0;
 //   X0.w = AngleAxis(0, Vec3::UnitX());
 //   efk_.init(X0);
-//   ROS_INFO_STREAM(" init X0 is \n" << "r:" << efk_.X_.r.transpose() << ',' <<
+//   ROS_DEBUG_STREAM(" init X0 is \n" << "r:" << efk_.X_.r.transpose() << ',' <<
 //         "\nq:" << efk_.X_.q.coeffs().transpose() << ',' <<
 //         "\nv:" << efk_.X_.v.transpose() << ',' <<
 //         "\nw:" << efk_.X_.w.angle() << '-' << efk_.X_.w.axis().transpose());
-//   ROS_INFO_STREAM(" init P is \n" << efk_.P_);
+//   ROS_DEBUG_STREAM(" init P is \n" << efk_.P_);
 
   // setup subscribers and publishers
   camera_info_sub_ = nh_.subscribe("camera_info", 1, &Tracker::cameraInfoCallback, this);
   starting_pose_sub_ = nh_.subscribe("camera_pose", 1, &Tracker::cameraPoseCallback, this);
   reset_sub_ = nh_.subscribe("reset", 1, &Tracker::resetCallback, this);
-  event_sub_ = nh_.subscribe("events", 1, &Tracker::eventsCallback, this);
+  event_sub_ = nh_.subscribe("events", 10, &Tracker::eventsCallback, this);
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("tracked_pose", 2, true);
   image_transport::ImageTransport it_(nh_);
@@ -69,6 +69,8 @@ void Tracker::cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg
 
 void Tracker::resetCallback(const std_msgs::Bool::ConstPtr& msg) {
     ROS_INFO("received reset callback!");
+    is_tracking_running_ = false;
+
     // create initial state from last camera pose
     EFK::State X0;
     X0.r = camera_position_;
@@ -79,6 +81,9 @@ void Tracker::resetCallback(const std_msgs::Bool::ConstPtr& msg) {
 
     // reset time
     last_event_ts = ros::Time(0);
+
+    // reset counter
+    event_counter_ = 0;
 
     // project map
     map_.projectAll(camera_position_, camera_orientation_, camera_matrix_);
@@ -92,7 +97,8 @@ void Tracker::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg) {
     if (!(is_tracking_running_ and got_camera_pose_ and got_camera_info_)) return;
     // handle tracking
     for (int i = 0; i < msg->events.size(); ++i) {
-        handleEvent(msg->events[i]);
+        const dvs_msgs::Event &e = msg->events[i];
+        handleEvent(e);
     }
 }
 
@@ -117,8 +123,34 @@ void Tracker::publishTrackedPose(const EFK::State& S) {
 }
 
 
+void Tracker::updateMapEvents(const dvs_msgs::Event &e, bool used) {
+    // publish map with event
+    // get projected map
+    if (event_counter_ == 0)
+        map_events_ = cv::Mat(180, 240, CV_8UC3, cv::Scalar(0,0,0));
+    // add event
+    map_events_.at<cv::Vec3b>(cv::Point(e.x, e.y)) = (
+        used ? cv::Vec3b(0, 255, 255) : cv::Vec3b(0, 0, 255));
+        
+    event_counter_++;
+
+    if (event_counter_ == PUBLISH_MAP_EVENTS_RATE) {
+        map_.draw2dMap(map_events_);
+        // convert and publish tracked map
+        cv_bridge::CvImage cv_image;
+        map_events_.copyTo(cv_image.image);
+        cv_image.encoding = "bgr8";
+        event_map_pub_.publish(cv_image.toImageMsg());
+        // display with pause
+        // cv::imshow("map events", map_events_);
+        // cv::waitKey(0);
+
+        event_counter_ = 0;
+    }
+}
+
 void displayState(EFK::State S) {
-    ROS_INFO_STREAM(" state:\n" <<
+    ROS_DEBUG_STREAM(" state:\n" <<
         "\tr: " << S.r.transpose() << '\n' <<
         "\tq: " << S.q.coeffs().transpose() << '\n' <<
         "\tv: " << S.v.transpose() << '\n' <<
@@ -135,44 +167,34 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
     // predict
     double dt = (e.ts - last_event_ts).toSec();
     last_event_ts = e.ts;
-    Point2d eventPoint(e.x, e.y);
-    ROS_INFO_STREAM("###############################\n"
+    ROS_DEBUG_STREAM("###############################\n"
                     "### EVENT [" << e.x << ',' << e.y << "] dt=" << dt);
     
-    ROS_INFO("# before prediction");
+    ROS_DEBUG("# before prediction");
     displayState(efk_.getState());
     efk_.predict(dt);
-    ROS_INFO("# after prediction");
+    ROS_DEBUG("# after prediction");
     displayState(efk_.getState());
 
     // associate event to a segment in projected map
     double dist;
-    const uint segmentId = map_.getNearest(eventPoint, dist);
-    ROS_INFO_STREAM("event is at distance " << dist << ", segment " << segmentId);
-
-    // publish map with event
-    // get projected map
-    cv::Mat map_event = map_.get2dMap(180, 240);
-    // add event
-    cv::drawMarker(map_event, cv::Point(e.x, e.y), CV_RGB(255,0,0), cv::MARKER_CROSS, 5, 1);
+    Point2d eventPoint(e.x, e.y);
+    const int segmentId = map_.getNearest(eventPoint, dist);
     
-    cv::namedWindow("map event", cv::WINDOW_AUTOSIZE);
-    cv::imshow("map event", map_event);
-    cv::waitKey(0);
+    ROS_DEBUG_STREAM("event is at distance " << dist << ", segment " << segmentId);
 
-    // convert and publish
-    cv_bridge::CvImage cv_image;
-    map_event.copyTo(cv_image.image);
-    cv_image.encoding = "bgr8";
-    event_map_pub_.publish(cv_image.toImageMsg());
-
+    // no segment matched -> segmentId = -1  or too far
+    if (segmentId < 0 or abs(dist) >= THRESHOLD_MATCHING_DIST) {
+        updateMapEvents(e);
+        return; // skip event
+    }
+    updateMapEvents(e, true);
 
     // reproject associated segment
     EFK::State S = efk_.getState();
-    map_.project(segmentId, S.r, S.q, camera_matrix_);
-    
-    
-    if (abs(dist) >= THRESHOLD_MATCHING_DIST) return;
+    // map_.project(segmentId, S.r, S.q, camera_matrix_);
+    // DEBUG PROJECTING ALL
+    map_.projectAll(S.r, S.q, camera_matrix_);
 
     // compute measurement (distance) and jacobian
     Eigen::RowVector3d jac_d_r;
@@ -183,7 +205,7 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
     
     // update state in efk
     efk_.update(dist, H);
-    ROS_INFO("# after update");
+    ROS_DEBUG("# after update");
     displayState(efk_.getState());
     publishTrackedPose(efk_.getState());
 }

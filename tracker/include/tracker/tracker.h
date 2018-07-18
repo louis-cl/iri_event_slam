@@ -75,6 +75,12 @@ private:
     ros::Publisher pose_pub_;
     // debug event association
     image_transport::Publisher event_map_pub_;
+    // image of map and events
+    cv::Mat map_events_;
+    // number of events to acumulate before publishing a map image
+    const uint PUBLISH_MAP_EVENTS_RATE = 50;
+    uint event_counter_;
+    void updateMapEvents(const dvs_msgs::Event &e, bool used = false);
 
     // TRACKING VARIABLES
     ros::Time last_event_ts;

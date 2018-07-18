@@ -28,23 +28,30 @@ class TrackerMap {
                         const Vec4& camera_matrix);
         
         // project a 3d segment to the 2d map
-        void project(uint s_id,
+        void project(int s_id,
             const Vec3& camera_position,
             const Quaternion& camera_orientation,
             const Vec4& camera_matrix);
 
         // get distance of a point to a segment in the 2d map
-        double getDistance(const Point2d &p, uint s_id);        
+        inline double getDistance(const Point2d &p, int s_id) {
+            return SlamLine::getDistance(map_[s_id], p);
+        }
         // same as above + jacobians with respect to r,q
-        double getDistance(const Point2d& p, uint s_id,
-                Eigen::RowVector3d& jac_d_r, Eigen::RowVector4d& jac_d_q);
+        inline double getDistance(const Point2d& p, int s_id,
+                Eigen::RowVector3d& jac_d_r, Eigen::RowVector4d& jac_d_q) {
+            return SlamLine::getDistance(map_[s_id], p, jac_d_r, jac_d_q);
+        }
 
         // get id of the nearest segment to a 2d point in the 2d map
-        uint getNearest(const Point2d &p);
-        uint getNearest(const Point2d &p, double &best_distance);
+        inline int getNearest(const Point2d &p) {
+            double d;
+            return getNearest(p, d);
+        }
+        int getNearest(const Point2d &p, double &best_distance);
 
-        // return a 2d map segments in green, black background
-        cv::Mat get2dMap(uint h, uint w);
+        // draw the 2d map segments in green
+        void draw2dMap(cv::Mat &img);
 
     private:
         vector<SlamLine> map_;
