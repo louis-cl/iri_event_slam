@@ -143,10 +143,10 @@ void Tracker::updateMapEvents(const dvs_msgs::Event &e, bool used) {
         cv_image.encoding = "bgr8";
         event_map_pub_.publish(cv_image.toImageMsg());
         // display with pause
-        if (used) {
-            cv::imshow("map events", map_events_);
-            cv::waitKey(0);
-        }
+        // if (used) {
+        //     cv::imshow("map events", map_events_);
+        //     cv::waitKey(0);
+        // }
 
         event_counter_ = 0;
     }

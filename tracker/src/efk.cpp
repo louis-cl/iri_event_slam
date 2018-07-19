@@ -56,23 +56,23 @@ void EFK::predict(double dt) {
        JacQuaternion(w*dt)_w = JacQuaternion(w*dt)_u * JacU_w +
                                JacQuaternion(w*dt)_theta * JacTheta_w
 
-       [ 0   0   0 ]                         [ -sin(theta/2)  ]
-       [ 1   0   0 ]                         [                ]
-       [ 0   1   0 ] * dt/theta   +   dt/2 * [ cos(theta/2)*u ] * u.transpose()
-       [ 0   0   1 ]                         [                ]
+       [   0    0    0   ]                         [ -sin(theta/2)  ]
+       [                 ]                         [                ]
+       [ sin(theta/2)*Id ] * dt/theta   +   dt/2 * [ cos(theta/2)*u ] * u.transpose()
+       [                 ]                         [                ]
 
 
        if |w*dt| = theta is small, we have a bad jacobian => aproximate with Taylor
        JacQuaternion(w*dt)_w = JacQuaternion(w*dt)_(w*dt) * Jac(w*dt)_w
 
        [ -dt/4 * w.transpose() ] 
-       [ 1/2 * Identity3       ] *  (dt * Identity3)
+       [   1/2 * Identity3     ] *  (dt * Identity3)
     */                               
     Eigen::Matrix<double, 4, 3> JacQuaternion_w;
     if (theta >= 1e-6) {
         JacQuaternion_w = dt/2 *
             (Vec4() << -sin(theta/2), cos(theta/2)*u).finished() * u.transpose();
-        JacQuaternion_w.block<3,3>(1,0).diagonal().array() += 1/X_.w.angle(); // dt/theta
+        JacQuaternion_w.block<3,3>(1,0).diagonal().array() += sin(theta/2)/X_.w.angle(); // dt/theta = 1/w.angle
     } else {
         JacQuaternion_w << -dt/2 * X_.w.axis(), 1,0,0, 0,1,0, 0,0,1;
         JacQuaternion_w *= dt/2;
