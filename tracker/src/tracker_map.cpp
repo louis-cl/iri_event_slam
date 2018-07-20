@@ -107,6 +107,10 @@ cv::RotatedRect TrackerMap::getErrorEllipse(double chisq, const Point2d &mean, c
     // minor and major axes
     double half_major_axis_size = chisq*sqrt(es.eigenvalues()[1]);
     double half_minor_axis_size = chisq*sqrt(es.eigenvalues()[0]);
+    if (!(std::isfinite(half_major_axis_size) and std::isfinite(half_minor_axis_size))) {
+        half_major_axis_size = half_minor_axis_size = 0;
+        ROS_WARN("error ellipse is infinite");
+    }
     // return the oriented ellipse (-angle before opencv has cw angles...)
     return cv::RotatedRect(cv::Point2d(mean[0], mean[1]), cv::Size2f(half_major_axis_size, half_minor_axis_size), -angle);
 }

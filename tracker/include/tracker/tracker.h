@@ -31,11 +31,11 @@ public:
     
     // uncertainty in movement per second
     const Vec3 sigma_v = (Eigen::Vector3d() << 2, 2, 2).finished();
-    const Vec3 sigma_w = (Eigen::Vector3d() << 2, 2, 2).finished();
+    const Vec3 sigma_w = (Eigen::Vector3d() << 0.5, 0.5, 0.5).finished();
     // uncertainty in measurement of pixel-segment distance
-    const double sigma_d    = 0.5;
+    const double sigma_d    = 1;
     // maximum distance to match event to line
-    const double MATCHING_DIST_THRESHOLD = 2;
+    const double MATCHING_DIST_THRESHOLD = 5;
     // minimum margin between 1st and 2nd distance
     const double MATCHING_DIST_MIN_MARGIN = 10;
 
@@ -80,7 +80,7 @@ private:
     // image of map and events
     cv::Mat map_events_;
     // number of events to acumulate before publishing a map image
-    const uint PUBLISH_MAP_EVENTS_RATE = 100;
+    const uint PUBLISH_MAP_EVENTS_RATE = 500;
     uint event_counter_;
     void updateMapEvents(const dvs_msgs::Event &e, bool used = false);
 
