@@ -43,18 +43,23 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
   }
 
   ROS_DEBUG("got an image");
+  // undistort image
+  cv_bridge::CvImage cv_img;
+  cv_img.encoding = cv_ptr->encoding;
+  cv::undistort(cv_ptr->image, cv_img.image, camera_matrix_, dist_coeffs_);
 
   // find square in image
-  std::vector<cv::Point> square = findSquare(cv_ptr);
+  std::vector<cv::Point> square = findSquare(cv_img);
+
   // draw square and publish
   if (square.size() > 0) {
   
-    std::cout << "got a square: " <<  square << std::endl;
+    ROS_DEBUG_STREAM("got a square: " <<  square);
     // grayscale to color
-    cv::Mat img;
-    cv::cvtColor(cv_ptr->image, img, CV_GRAY2BGR);
+    cv::cvtColor(cv_img.image, cv_img.image, CV_GRAY2BGR);
+    cv_img.encoding = "bgr8";
     // add square
-    cv::polylines(img, square, true, cv::Scalar(0,0,255), 3, cv::LINE_AA);
+    cv::polylines(cv_img.image, square, true, cv::Scalar(0,0,255), 3, cv::LINE_AA);
 
     // TEMPORAL code here to get camera position
     // assuming square to be 85x85mm centered in Z = 0 plane
@@ -62,13 +67,12 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
 
     // sort point clockwise
     sortPointsCW(square);
-    std::cout << "sorted points:" << square << std::endl;
+    ROS_DEBUG_STREAM("sorted points:" << square);
 
     for (int i = 0; i < 4; ++i) {
         cv::Point &p = square[i];
-
-        cv::circle(img, p, 1, CV_RGB(0,0,255),5);
-        cv::putText(img, std::to_string(i+1), p, cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,143,143), 2);
+        cv::circle(cv_img.image, p, 1, CV_RGB(0,0,255),5);
+        cv::putText(cv_img.image, std::to_string(i+1), p, cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,143,143), 2);
     }
 
     float hw = 85.0f/2; // half width of square
@@ -88,10 +92,9 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     cv::solvePnP(model_points, image_points, camera_matrix_, dist_coeffs_,
       rotation_vector, translation_vector, false, cv::SOLVEPNP_ITERATIVE);
 
-    std::cout << "model points" << cv::Mat(model_points) << "\nimage points:" << cv::Mat(image_points) << std::endl;
-
-    std::cout << "Rotation Vector " << std::endl << rotation_vector << std::endl;
-    std::cout << "Translation Vector" << std::endl << translation_vector << std::endl;
+    ROS_DEBUG_STREAM("model points" << cv::Mat(model_points) << "\nimage points:" << cv::Mat(image_points));
+    ROS_DEBUG_STREAM("Rotation Vector\n" << rotation_vector);
+    ROS_DEBUG_STREAM("Translation Vector\n" << translation_vector);
     
     // reproject points
     std::vector<cv::Point2d> proj_image_points;
@@ -100,7 +103,7 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
     for (int i = 0; i < 4; ++i) {
         cv::Point2d &p = proj_image_points[i];
         ROS_INFO_STREAM("P" << i << ": " << p);
-        cv::circle(img, p, 1, CV_RGB(0,255,0),3);
+        cv::circle(cv_img.image, p, 1, CV_RGB(0,255,0),3);
     }
 
 
@@ -138,16 +141,10 @@ void TrackInit::imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
         poseStamped.pose.orientation.z = 0;
         poseStamped.pose.orientation.w = 1;
     }
-    poseStampedPub.publish(poseStamped);
-
-    // publish image with anotations
-    cv_bridge::CvImage cv_image;
-    img.copyTo(cv_image.image);
-    cv_image.encoding = "bgr8";
-    image_pub_.publish(cv_image.toImageMsg());
-  } else {
-    image_pub_.publish(msg);
+    poseStampedPub.publish(poseStamped); 
   }
+
+  image_pub_.publish(cv_img.toImageMsg());
 }
 
 void TrackInit::sortPointsCW(std::vector<cv::Point> &points) {
@@ -170,12 +167,12 @@ void TrackInit::sortPointsCW(std::vector<cv::Point> &points) {
   }
 }
 
-std::vector<cv::Point> TrackInit::findSquare(const cv_bridge::CvImageConstPtr img) {
+std::vector<cv::Point> TrackInit::findSquare(const cv_bridge::CvImage img) {
   std::vector<cv::Point> square;
   std::vector<std::vector<cv::Point> > contours;
   // threshold to low value (square should be black)
   cv::Mat im;
-  cv::threshold(img->image, im, 40, 255, cv::THRESH_BINARY_INV);
+  cv::threshold(img.image, im, 40, 255, cv::THRESH_BINARY_INV);
   // find contours
   cv::findContours(im, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
     

@@ -13,10 +13,10 @@ void SlamLine::project(const Vec3& r, const Quaternion& q, const Vec4& K) {
     Point3d p1_3d_c = R * (p1_3d - r);
     Point3d p2_3d_c = R * (p2_3d - r);
     // 3d camera segments -> 2d camera segments
-    double fx = K[0];
-    double fy = K[1];
-    double u0 = K[2];
-    double u1 = K[3];
+    double u0 = K[0];
+    double u1 = K[1];
+    double fx = K[2];
+    double fy = K[3];
     
     p1_2d[0] = fx * p1_3d_c[0]/p1_3d_c[2] + u0;
     p1_2d[1] = fy * p1_3d_c[1]/p1_3d_c[2] + u1;

@@ -19,6 +19,7 @@ class SlamLine {
         SlamLine(const Point3d& p1, const Point3d& p2);
         
         // project 3d points to 2d points
+        // r: position, q: orientation, K = [u0 u1 fx fy]
         void project(const Vec3& r, const Quaternion& q, const Vec4& K);
 
         // get distance between a SlamLine and a 2d point

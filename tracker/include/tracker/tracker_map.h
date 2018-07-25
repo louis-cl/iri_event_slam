@@ -31,6 +31,7 @@ class TrackerMap {
                         const Vec4& camera_matrix);
         
         // project a 3d segment to the 2d map
+        // camera_matrix is [u0 u1 fx fy]
         void project(int s_id,
             const Vec3& camera_position,
             const Quaternion& camera_orientation,

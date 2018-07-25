@@ -29,7 +29,7 @@ private:
   // handle raw grayscale intensity image
   void imageCallback(const sensor_msgs::Image::ConstPtr& msg);
   // find square in image an return points
-  static std::vector<cv::Point> findSquare(const cv_bridge::CvImageConstPtr img);
+  static std::vector<cv::Point> findSquare(const cv_bridge::CvImage img);
   // sort points CW
   static void sortPointsCW(std::vector<cv::Point> &points);
 

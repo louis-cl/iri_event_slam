@@ -42,7 +42,7 @@ public:
     
 //private:
     State X_;  // state
-    Mat13 P_; // state covariance in order [r q v w]
+    Mat13 P_; // state covariance in order [r v q w]
 
     // UNCERTAINTY CONSTANTS
     Mat13 Q_; // motion uncertainty per second

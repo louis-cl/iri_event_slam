@@ -43,8 +43,8 @@ void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
   ROS_INFO("got camera info");
   got_camera_info_ = true;
 
-  // K is row-major matrix
-  camera_matrix_ << msg->K[0], msg->K[4], msg->K[2], msg->K[5];
+  // K is row-major matrix [u0 u1 fx fy]
+  camera_matrix_ << msg->K[2], msg->K[5], msg->K[0], msg->K[4];
 
 // ignoring distortion for now
 //   dist_coeffs_ = Mat(msg->D.size(), 1, CV_64F);
@@ -134,7 +134,7 @@ void Tracker::updateMapEvents(const dvs_msgs::Event &e, bool used) {
         
     event_counter_++;
 
-    if (event_counter_ == PUBLISH_MAP_EVENTS_RATE or used) {
+    if (event_counter_ == PUBLISH_MAP_EVENTS_RATE) {
         //map_.draw2dMap(map_events_);
         map_.draw2dMapWithCov(map_events_, efk_.getCovariance().block<7,7>(0,0));
         // convert and publish tracked map
@@ -143,10 +143,8 @@ void Tracker::updateMapEvents(const dvs_msgs::Event &e, bool used) {
         cv_image.encoding = "bgr8";
         event_map_pub_.publish(cv_image.toImageMsg());
         // display with pause
-        // if (used) {
         //     cv::imshow("map events", map_events_);
         //     cv::waitKey(0);
-        // }
 
         event_counter_ = 0;
     }
