@@ -13,19 +13,27 @@
 
 #include <Eigen/Dense>
 #include <opencv2/opencv.hpp>
+#include <vector>
 
 #include "efk.h"
 #include "tracker_map.h"
 
+using Point2d = Eigen::Vector2d;
 using Vec3 = Eigen::Vector3d;
 using Vec4 = Eigen::Vector4d;
 using Quaternion = Eigen::Quaterniond;
 using AngleAxis = Eigen::AngleAxisd;
 
+using std::vector;
+
 namespace track {
 
 class Tracker {
 public:
+    struct Event {
+        Point2d p;
+        ros::Time ts;
+    };
     Tracker(ros::NodeHandle & nh);
     virtual ~Tracker();
     
@@ -53,8 +61,14 @@ private:
     
     // camera info parameters
     bool got_camera_info_;
-    Vec4 camera_matrix_;
-    //Mat camera_matrix_, dist_coeffs_;
+    Vec4 camera_matrix_; // [u0 u1 fx fy]
+
+    /*     opencv camera matrix and coefs
+       [fx  0  u0]
+       [0  fy  u1]      [k1 k2 p1 p2 k3...]
+       [0   0   1]
+    */
+    cv::Mat camera_matrix_cv, dist_coeffs_cv;
     ros::Subscriber camera_info_sub_;
 
     // last camera pose
@@ -82,11 +96,13 @@ private:
     // number of events to acumulate before publishing a map image
     const uint PUBLISH_MAP_EVENTS_RATE = 1000;
     uint event_counter_;
-    void updateMapEvents(const dvs_msgs::Event &e, bool used = false);
+    void updateMapEvents(const Tracker::Event &e, bool used = false);
 
     // TRACKING VARIABLES
     ros::Time last_event_ts;
-    void handleEvent(const dvs_msgs::Event &e);
+    void handleEvent(const Tracker::Event &e);
+
+    void undistortEvent(Tracker::Event &e);
 };
 
 }

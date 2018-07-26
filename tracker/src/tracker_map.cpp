@@ -99,7 +99,7 @@ cv::RotatedRect TrackerMap::getErrorEllipse(double chisq, const Point2d &mean, c
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> es(cov);
     ROS_DEBUG_STREAM("EIGEN VALUES ::: " << es.eigenvalues().transpose());
     // angle between the largest eigenvector and the x-axis
-    double angle = atan2(es.eigenvectors().col(2)[1], es.eigenvectors().col(2)[0]);
+    double angle = atan2(es.eigenvectors().col(1)[1], es.eigenvectors().col(1)[0]);
     // angle between [0,2pi] instaed of [-pi, pi]
     if (angle < 0) angle += M_PI;
     // angle to degrees

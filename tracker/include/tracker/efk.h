@@ -13,6 +13,7 @@ using Mat4 = Eigen::Matrix<double, 4, 4>;
 
 using std::sin;
 using std::cos;
+using std::round;
 
 namespace track {
 

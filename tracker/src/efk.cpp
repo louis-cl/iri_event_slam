@@ -74,7 +74,7 @@ void EFK::predict(double dt) {
             (Vec4() << -sin(theta/2), cos(theta/2)*u).finished() * u.transpose();
         JacQuaternion_w.block<3,3>(1,0).diagonal().array() += sin(theta/2)/X_.w.angle(); // dt/theta = 1/w.angle
     } else {
-        JacQuaternion_w << -dt/2 * X_.w.axis(), 1,0,0, 0,1,0, 0,0,1;
+        JacQuaternion_w << -dt/2 * u.transpose(), 1,0,0, 0,1,0, 0,0,1;
         JacQuaternion_w *= dt/2;
     }
     F_x.block<4,3>(3,10) = quaternionProductMatrix(q) * JacQuaternion_w;

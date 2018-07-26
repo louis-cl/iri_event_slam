@@ -40,18 +40,24 @@ Tracker::~Tracker() {
 }
 
 void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
-  ROS_INFO("got camera info");
-  got_camera_info_ = true;
+    ROS_INFO("got camera info");
+    got_camera_info_ = true;
+    
+    // K is row-major matrix
+    camera_matrix_ << msg->K[2], msg->K[5], msg->K[0], msg->K[4];
 
-  // K is row-major matrix [u0 u1 fx fy]
-  camera_matrix_ << msg->K[2], msg->K[5], msg->K[0], msg->K[4];
+    camera_matrix_cv = cv::Mat(3, 3, CV_64F);
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            camera_matrix_cv.at<double>(cv::Point(i, j)) = msg->K[i+j*3];
 
-// ignoring distortion for now
-//   dist_coeffs_ = Mat(msg->D.size(), 1, CV_64F);
-//   for (int i = 0; i < msg->D.size(); i++)
-//     dist_coeffs_.at<double>(i) = msg->D[i];
+    dist_coeffs_cv = cv::Mat(msg->D.size(), 1, CV_64F);
+    for (int i = 0; i < msg->D.size(); i++)
+        dist_coeffs_cv.at<double>(i) = msg->D[i];
 
-  camera_info_sub_.shutdown();
+    ROS_DEBUG_STREAM("camera matrix: \n" << camera_matrix_cv << "\n dist coeffs: \n" << dist_coeffs_cv);
+
+    camera_info_sub_.shutdown();
 }
 
 void Tracker::cameraPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
@@ -98,7 +104,10 @@ void Tracker::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg) {
     // handle tracking
     for (int i = 0; i < msg->events.size(); ++i) {
         const dvs_msgs::Event &e = msg->events[i];
-        handleEvent(e);
+        Tracker::Event event { Point2d(e.x, e.y), e.ts };
+        // undistort event
+        undistortEvent(event);
+        handleEvent(event);
     }
 }
 
@@ -123,14 +132,21 @@ void Tracker::publishTrackedPose(const EFK::State& S) {
 }
 
 
-void Tracker::updateMapEvents(const dvs_msgs::Event &e, bool used) {
+void Tracker::updateMapEvents(const Tracker::Event &e, bool used) {
     // publish map with event
     // get projected map
     if (event_counter_ == 0)
         map_events_ = cv::Mat(180, 240, CV_8UC3, cv::Scalar(0,0,0));
     // add event red if used, grey if not
-    map_events_.at<cv::Vec3b>(cv::Point(e.x, e.y)) = (
-        used ? cv::Vec3b(0, 0, 255) : cv::Vec3b(150, 150, 150));
+    // event is a float !!!
+    cv::Point event_point(round(e.p[0]), round(e.p[1]));
+    if (event_point.x >= 0 and event_point.y >= 0 and 
+        event_point.x < map_events_.cols and event_point.y < map_events_.rows) {
+        map_events_.at<cv::Vec3b>(cv::Point(e.p[0], e.p[1])) = (
+            used ? cv::Vec3b(0, 0, 255) : cv::Vec3b(150, 150, 150));
+    } /*else {
+        ROS_DEBUG_STREAM("event point outside image " << e.p.transpose());
+    }*/
         
     event_counter_++;
 
@@ -160,16 +176,19 @@ void displayState(EFK::State S) {
 }
 
 
-void Tracker::handleEvent(const dvs_msgs::Event &e) {
+void Tracker::handleEvent(const Tracker::Event &e) {
     if (last_event_ts.isZero()) { // first event
         last_event_ts = e.ts;
         return;
     }
     // predict
     double dt = (e.ts - last_event_ts).toSec();
+    if (dt > 1e-2) ROS_WARN_STREAM("huge dt " << dt);
+    else if (dt > 1e-4) ROS_DEBUG_STREAM("big dt " << dt);
+    
     last_event_ts = e.ts;
     ROS_DEBUG("##############################");
-    ROS_DEBUG_STREAM("### EVENT [" << e.x << ',' << e.y << "] dt=" << dt);
+    ROS_DEBUG_STREAM("### EVENT " << e.p << " dt = " << dt);
     ROS_DEBUG_STREAM("P diagonal" << efk_.getCovariance().diagonal().transpose());
     ROS_DEBUG("# before prediction");
     displayState(efk_.getState());
@@ -179,8 +198,7 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
 
     // associate event to a segment in projected map
     double dist;
-    Point2d eventPoint(e.x, e.y);
-    const int segmentId = map_.getNearest(eventPoint, dist, MATCHING_DIST_THRESHOLD, MATCHING_DIST_MIN_MARGIN);
+    const int segmentId = map_.getNearest(e.p, dist, MATCHING_DIST_THRESHOLD, MATCHING_DIST_MIN_MARGIN);
     
     ROS_DEBUG_STREAM("event is at distance " << dist << ", segment " << segmentId);
 
@@ -200,7 +218,7 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
     // compute measurement (distance) and jacobian
     Eigen::RowVector3d jac_d_r;
     Eigen::RowVector4d jac_d_q;
-    dist = map_.getDistance(eventPoint, segmentId, jac_d_r, jac_d_q);
+    dist = map_.getDistance(e.p, segmentId, jac_d_r, jac_d_q);
     Eigen::Matrix<double, 1, 7> H;
     H << jac_d_r, jac_d_q;
     
@@ -209,6 +227,21 @@ void Tracker::handleEvent(const dvs_msgs::Event &e) {
     ROS_DEBUG("# after update");
     displayState(efk_.getState());
     publishTrackedPose(efk_.getState());
+}
+
+
+void Tracker::undistortEvent(Tracker::Event &e) {
+    // this is probably ineficient cv::undistortPoints is an iterative algorithm
+    // should estimate a undistort model once and use it
+    ROS_DEBUG_STREAM("before undistort: " << e.p.transpose());
+    vector<cv::Point2d> points {cv::Point2d(e.p[0], e.p[1])};
+
+    cv::undistortPoints(points, points,
+                        camera_matrix_cv, dist_coeffs_cv,
+                        cv::noArray(), camera_matrix_cv);
+
+    e.p << points[0].x, points[0].y;
+    ROS_DEBUG_STREAM("after undistort: " << e.p.transpose());
 }
 
 } // namespace
