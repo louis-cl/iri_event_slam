@@ -47,6 +47,8 @@ public:
     // minimum margin between 1st and 2nd distance
     const double MATCHING_DIST_MIN_MARGIN = 10;
 
+    const uint IMAGE_WIDTH = 240;
+    const uint IMAGE_HEIGHT = 180;
 private:
     ros::NodeHandle nh_;
     EFK efk_;
@@ -59,7 +61,15 @@ private:
 
     void publishTrackedPose(const EFK::State& S);
     
-    // camera info parameters
+    // DEPENDENCIES
+    // pose msg as initial pose
+    ros::Subscriber starting_pose_sub_;
+    // reset EFK tracking flag
+    ros::Subscriber reset_sub_;
+    // events from camera
+    ros::Subscriber event_sub_;
+
+    // CAMERA INFO
     bool got_camera_info_;
     Vec4 camera_matrix_; // [u0 u1 fx fy]
 
@@ -70,22 +80,21 @@ private:
     */
     cv::Mat camera_matrix_cv, dist_coeffs_cv;
     ros::Subscriber camera_info_sub_;
-
     // last camera pose
     bool got_camera_pose_;
     Vec3 camera_position_; // x,y,z
     Quaternion camera_orientation_; // quaternion x,y,z,w
 
+    // TRACKING VARIABLES
     // is running ?
     bool is_tracking_running_;
+    ros::Time last_event_ts;    
+    void handleEvent(const Tracker::Event &e);
 
-    // pose msg as initial pose
-    ros::Subscriber starting_pose_sub_;
-    // reset EFK tracking
-    ros::Subscriber reset_sub_;
-    // get events
-    ros::Subscriber event_sub_;
-    
+    // UNDISTORT EVENTS
+    Vec3 undist_coeffs;
+    void undistortEvent(Tracker::Event &e);
+
     // VISUALIZATION
     // publish pose
     ros::Publisher pose_pub_;
@@ -97,12 +106,6 @@ private:
     const uint PUBLISH_MAP_EVENTS_RATE = 1000;
     uint event_counter_;
     void updateMapEvents(const Tracker::Event &e, bool used = false);
-
-    // TRACKING VARIABLES
-    ros::Time last_event_ts;
-    void handleEvent(const Tracker::Event &e);
-
-    void undistortEvent(Tracker::Event &e);
 };
 
 }
