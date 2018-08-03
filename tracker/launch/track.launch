@@ -1,0 +1,29 @@
+<!-- Launch file for init tracking, finds a square in the image -->
+<launch>
+  <!-- camera driver -->
+  <node name="davis_ros_driver" pkg="davis_ros_driver" type="davis_ros_driver" />
+
+  <!-- TRACKING INIT -->
+  <node name="track_init" pkg="track_init" type="track_init">
+    <remap from="image" to="/dvs/image_raw" />
+    <remap from="rendering" to="/track/init_rendering" />
+    <remap from="pose" to="/track/init_pose" />
+    <remap from="camera_info" to="/dvs/camera_info" />
+  </node>
+  <!-- display -->
+  <node name="track_init_view" pkg="image_view" type="image_view">
+  	<remap from="image" to="/track/init_rendering"/>
+  </node>
+  
+  <!-- TRACKING -->
+  <node name="tracker" pkg="tracker" type="tracker" output="screen">
+    <remap from="camera_info" to="/dvs/camera_info" />
+    <remap from="camera_pose" to="/track/init_pose" />
+    <remap from="events" to="/dvs/events" />
+    <remap from="map_events" to="/track/map" />
+  </node>
+  <!-- display -->
+  <node name="tracker_view" pkg="image_view" type="image_view">
+  	<remap from="image" to="/track/map"/>
+  </node>
+</launch>
