@@ -1,0 +1,7 @@
+<library path="lib/libtracker_nodelet">
+  <class name="track/TrackerNodelet" type="track::TrackerNodelet" base_class_type="nodelet::Nodelet">
+    <description> 
+      A nodelet wrapper for the tracker.
+    </description>
+  </class>
+</library>

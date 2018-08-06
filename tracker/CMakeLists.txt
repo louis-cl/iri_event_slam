@@ -13,6 +13,17 @@ find_package(GTest REQUIRED)
 
 cs_add_executable(tracker
   src/tracker.cpp
+  src/tracker_nodelet.cpp
+  src/tracker_node.cpp
+  src/tracker_map.cpp
+  src/efk.cpp
+  src/slam_line.cpp
+)
+
+# nodelet into library
+cs_add_library(tracker_nodelet
+  src/tracker.cpp
+  src/tracker_nodelet.cpp
   src/tracker_node.cpp
   src/tracker_map.cpp
   src/efk.cpp
@@ -20,6 +31,13 @@ cs_add_executable(tracker
 )
 
 target_link_libraries(tracker
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBRARIES}
+   ${GTEST_LIBRARIES}
+   pthread
+)
+
+target_link_libraries(tracker_nodelet
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
    ${GTEST_LIBRARIES}
@@ -34,3 +52,7 @@ catkin_add_gtest(tracker-test
 target_link_libraries(tracker-test ${catkin_LIBRARIES})
 
 cs_install()
+
+install(FILES tracker_nodelet.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
