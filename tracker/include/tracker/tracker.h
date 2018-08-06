@@ -81,14 +81,13 @@ private:
     cv::Mat camera_matrix_cv, dist_coeffs_cv;
     ros::Subscriber camera_info_sub_;
     // last camera pose
-    bool got_camera_pose_;
+    bool got_camera_pose_; // from tracker_init
     Vec3 camera_position_; // x,y,z
     Quaternion camera_orientation_; // quaternion x,y,z,w
 
     // TRACKING VARIABLES
-    // is running ?
     bool is_tracking_running_;
-    ros::Time last_event_ts;    
+    ros::Time last_event_ts;
     void handleEvent(const Tracker::Event &e);
 
     // UNDISTORT EVENTS
@@ -99,7 +98,7 @@ private:
     // publish pose
     ros::Publisher pose_pub_;
     // debug event association
-    image_transport::Publisher event_map_pub_;
+    image_transport::Publisher map_events_pub_;
     // image of map and events
     cv::Mat map_events_;
     // number of events to acumulate before publishing a map image

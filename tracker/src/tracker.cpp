@@ -31,12 +31,12 @@ Tracker::Tracker(ros::NodeHandle & nh) : nh_(nh) {
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("tracked_pose", 2, true);
   image_transport::ImageTransport it_(nh_);
-  event_map_pub_ = it_.advertise("map_events", 1);
+  map_events_pub_ = it_.advertise("map_events", 1);
 }
 
 Tracker::~Tracker() {
     pose_pub_.shutdown();
-    event_map_pub_.shutdown();
+    map_events_pub_.shutdown();
 }
 
 void Tracker::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
@@ -112,8 +112,11 @@ void Tracker::resetCallback(const std_msgs::Bool::ConstPtr& msg) {
 void Tracker::eventsCallback(const dvs_msgs::EventArray::ConstPtr& msg) {
     ROS_DEBUG("got an event array of size %lu", msg->events.size());
     if (!(is_tracking_running_ and got_camera_pose_ and got_camera_info_)) return;
-    // handle tracking
-    for (int i = 0; i < msg->events.size(); ++i) {
+    // handle variable amount of events, this is STUPID, EASY and NOT ADAPTATIVE !!!
+    const uint EVENT_MAX_SIZE = 2000;
+    uint increment = msg->events.size() / EVENT_MAX_SIZE + 1;
+
+    for (int i = 0; i < msg->events.size(); i += increment) {
         const dvs_msgs::Event &e = msg->events[i];
         Tracker::Event event { Point2d(e.x, e.y), e.ts };
         // undistort event
@@ -168,7 +171,7 @@ void Tracker::updateMapEvents(const Tracker::Event &e, bool used) {
         cv_bridge::CvImage cv_image;
         map_events_.copyTo(cv_image.image);
         cv_image.encoding = "bgr8";
-        event_map_pub_.publish(cv_image.toImageMsg());
+        map_events_pub_.publish(cv_image.toImageMsg());
         // display with pause
         //     cv::imshow("map events", map_events_);
         //     cv::waitKey(0);
@@ -198,14 +201,14 @@ void Tracker::handleEvent(const Tracker::Event &e) {
     else if (dt > 1e-4) ROS_DEBUG_STREAM("big dt " << dt);
     
     last_event_ts = e.ts;
-    ROS_DEBUG("##############################");
+    // ROS_DEBUG("##############################");
     ROS_DEBUG_STREAM("### EVENT " << e.p << " dt = " << dt);
-    ROS_DEBUG_STREAM("P diagonal" << efk_.getCovariance().diagonal().transpose());
-    ROS_DEBUG("# before prediction");
-    displayState(efk_.getState());
+    // ROS_DEBUG_STREAM("P diagonal" << efk_.getCovariance().diagonal().transpose());
+    // ROS_DEBUG("# before prediction");
+    // displayState(efk_.getState());
     efk_.predict(dt);
-    ROS_DEBUG("# after prediction");
-    displayState(efk_.getState());
+    // ROS_DEBUG("# after prediction");
+    // displayState(efk_.getState());
 
     // associate event to a segment in projected map
     double dist;
@@ -222,9 +225,9 @@ void Tracker::handleEvent(const Tracker::Event &e) {
 
     // reproject associated segment
     EFK::State S = efk_.getState();
-    // map_.project(segmentId, S.r, S.q, camera_matrix_);
+    map_.project(segmentId, S.r, S.q, camera_matrix_);
     // DEBUG PROJECTING ALL
-    map_.projectAll(S.r, S.q, camera_matrix_);
+    //map_.projectAll(S.r, S.q, camera_matrix_);
 
     // compute measurement (distance) and jacobian
     Eigen::RowVector3d jac_d_r;
@@ -235,8 +238,8 @@ void Tracker::handleEvent(const Tracker::Event &e) {
     
     // update state in efk
     efk_.update(dist, H);
-    ROS_DEBUG("# after update");
-    displayState(efk_.getState());
+    // ROS_DEBUG("# after update");
+    // displayState(efk_.getState());
     publishTrackedPose(efk_.getState());
 }
 
