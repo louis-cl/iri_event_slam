@@ -152,7 +152,7 @@ void TrackInit::sortPointsCW(std::vector<cv::Point> &points) {
   cv::Point C(0,0);
   for (cv::Point& p : points) C += p;
   C *= 1.0/points.size();
-  // 
+  // compute the angle of the centroid-vertex segment
   std::vector<std::pair<float, cv::Point> > angles(points.size());
   for (int i = 0; i < points.size(); ++i) {
     angles[i].first = atan2(points[i].y - C.y, points[i].x - C.x);

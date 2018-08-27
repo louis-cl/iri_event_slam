@@ -15,6 +15,7 @@ namespace track
 {
 
 class SlamLine {
+// represents a 3d segment projectable into a 2d camera plane
     public:
         SlamLine(const Point3d& p1, const Point3d& p2);
         

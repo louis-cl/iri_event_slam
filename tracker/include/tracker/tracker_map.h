@@ -22,6 +22,7 @@ using Quaternion = Eigen::Quaterniond;
 namespace track
 {
 class TrackerMap {
+// Store and keep track of a 3d map of segments
     public:
         TrackerMap();
         

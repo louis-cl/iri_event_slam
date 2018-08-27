@@ -18,6 +18,7 @@ using std::round;
 namespace track {
 
 class EFK {
+// Extended Kalman Filter implementation for a camera state
 public:
     // STATE DEFINITION
     struct State {
