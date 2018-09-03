@@ -26,15 +26,24 @@ If you have a bag data with:
 * /track/init_rendering : sensor_msgs/Image (optional)
 
 start ros
+
 `roscore`
+
 and the tracker
+
 `rosrun tracker tracker camera_info:=/dvs/camera_info camera_pose:=/track/init_pose events:=/dvs/events`
+
 play the bag in pause mode
+
 `rosbag play track_data.bag --pause`
+
 press `s` multiple time in the rosbag terminal until the tracker gets the `camera_info` and `camera_pose`
 send a reset event to the tracker to start it
+
 `rostopic pub /reset std_msgs/Bool "data: true" -1`
+
 return to the rosbag and keep pressing `s` (step by step) or `space` (play/pause)
+
 ---
 You can also visualize the **track_init** square detection and the projected map with events:
 ```sh
