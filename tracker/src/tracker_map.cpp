@@ -4,12 +4,12 @@ namespace track
 {
 TrackerMap::TrackerMap() {
     // setup known map, UGLY CODE, do this outside...
-    const double hw = 85.0f/2;
+    const double hw = 85.0/2;
     vector<Point3d> model_points {
-        Point3d(-hw, -hw, 0.0f),
-        Point3d( hw, -hw, 0.0f),
-        Point3d( hw,  hw, 0.0f),
-        Point3d( -hw,  hw, 0.0f)
+        Point3d( -hw, -hw, 0.0),
+        Point3d(  hw, -hw, 0.0),
+        Point3d(  hw,  hw, 0.0),
+        Point3d( -hw,  hw, 0.0)
     };
     for(int i = 0; i < 4; ++i) {
         Point3d p1 = model_points[i];

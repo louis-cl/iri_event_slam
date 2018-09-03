@@ -113,10 +113,10 @@ void EFK::update(double dist, const Eigen::Matrix<double, 1, 7>& H) {
 
     X_.v += K.block<3,1>(7,0) * z;
     
-    Vec3 new_axis = X_.w.angle()*X_.w.axis() + K.block<3,1>(10,0)*z;
-    double new_angle = new_axis.norm();
-    X_.w.angle() = new_angle;
-    X_.w.axis() = new_axis / new_angle;
+    Vec3 new_angle_axis = X_.w.angle()*X_.w.axis() + K.block<3,1>(10,0)*z;
+    double new_angle    = new_angle_axis.norm();
+    X_.w.angle()        = new_angle;
+    X_.w.axis()         = new_angle_axis / new_angle;
 
     // update state covariance      P = P - K * Z * K'
     // noalias for faster operation (lhs and rhs do not alias)

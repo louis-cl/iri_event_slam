@@ -221,6 +221,8 @@ void Tracker::handleEvent(const Tracker::Event &e) {
         updateMapEvents(e);
         return; // skip event
     }
+
+    // update image of events and projected map
     updateMapEvents(e, true);
 
     // reproject associated segment
@@ -233,11 +235,11 @@ void Tracker::handleEvent(const Tracker::Event &e) {
     Eigen::RowVector3d jac_d_r;
     Eigen::RowVector4d jac_d_q;
     dist = map_.getDistance(e.p, segmentId, jac_d_r, jac_d_q);
-    Eigen::Matrix<double, 1, 7> H;
-    H << jac_d_r, jac_d_q;
+    Eigen::Matrix<double, 1, 7> jac_d_pose;
+    jac_d_pose << jac_d_r, jac_d_q;
     
     // update state in efk
-    efk_.update(dist, H);
+    efk_.update(dist, jac_d_pose);
     // ROS_DEBUG("# after update");
     // displayState(efk_.getState());
     publishTrackedPose(efk_.getState());

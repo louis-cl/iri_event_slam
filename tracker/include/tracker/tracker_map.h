@@ -56,7 +56,7 @@ class TrackerMap {
         void draw2dMapWithCov(cv::Mat &img, const Eigen::Matrix<double, 7, 7>& P);
 
     private:
-        vector<SlamLine> map_;
+        vector<SlamLine> map_; // SlamLine: 3D lines and their 2D projections // TODO make map<SlamLine>.
 
         cv::RotatedRect getErrorEllipse(double chisq, const Point2d &mean, const Eigen::Matrix2d& cov);
 };

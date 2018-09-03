@@ -3,13 +3,19 @@ set(PROJECT_NAME tracker)
 project(${PROJECT_NAME})
 
 find_package(catkin_simple REQUIRED)
+
+find_package(Eigen3 REQUIRED)
+INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIRS})
+
 include_directories(${GTEST_INCLUDE_DIRS})
+
+
 catkin_simple()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3")
 
 find_package(OpenCV REQUIRED)
-find_package(GTest REQUIRED)
+#find_package(GTest REQUIRED)
 
 cs_add_executable(tracker
   src/tracker.cpp
@@ -33,23 +39,23 @@ cs_add_library(tracker_nodelet
 target_link_libraries(tracker
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
-   ${GTEST_LIBRARIES}
+#   ${GTEST_LIBRARIES}
    pthread
 )
 
 target_link_libraries(tracker_nodelet
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
-   ${GTEST_LIBRARIES}
+#   ${GTEST_LIBRARIES}
    pthread
 )
 
 # add test suite
-catkin_add_gtest(tracker-test
-  test/test.cpp
-  src/slam_line.cpp  
-)
-target_link_libraries(tracker-test ${catkin_LIBRARIES})
+#catkin_add_gtest(tracker-test
+#  test/test.cpp
+#  src/slam_line.cpp  
+#)
+#target_link_libraries(tracker-test ${catkin_LIBRARIES})
 
 cs_install()
 

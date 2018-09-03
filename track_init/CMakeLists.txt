@@ -3,6 +3,9 @@ project(track_init)
 
 find_package(catkin_simple REQUIRED)
 
+find_package(Eigen3 REQUIRED)
+INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIRS})
+
 catkin_simple()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3")

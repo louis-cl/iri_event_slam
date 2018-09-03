@@ -39,11 +39,11 @@ public:
     
     // uncertainty in movement per second
     const Vec3 sigma_v = (Eigen::Vector3d() << 2, 2, 2).finished();
-    const Vec3 sigma_w = (Eigen::Vector3d() << 0.5, 0.5, 0.5).finished();
+    const Vec3 sigma_w = (Eigen::Vector3d() << 4, 4, 4).finished();
     // uncertainty in measurement of pixel-segment distance
     const double sigma_d    = 1;
     // maximum distance to match event to line
-    const double MATCHING_DIST_THRESHOLD = 5;
+    const double MATCHING_DIST_THRESHOLD = 2.5;
     // minimum margin between 1st and 2nd distance
     const double MATCHING_DIST_MIN_MARGIN = 10;
 
