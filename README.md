@@ -1,5 +1,15 @@
 # ROS DAVIS Tracker
 You first need to install `davis_ros_driver` from https://github.com/uzh-rpg/rpg_dvs_ros
+
+### ROS workspace
+You need a ROS workspace. If you followed the instructions above, this workspace is `catkin_ws`.
+
+You need to source the setup file:
+```sh
+cd catkin_ws
+source devel.setup.bash
+```
+
 ### Building
 ```sh
 catkin build track_init tracker
