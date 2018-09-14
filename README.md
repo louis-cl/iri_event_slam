@@ -7,7 +7,7 @@ You need a ROS workspace. If you followed the instructions above, this workspace
 You need to source the setup file:
 ```sh
 cd catkin_ws
-source devel.setup.bash
+source devel/setup.bash
 ```
 
 ### Building
