@@ -15,6 +15,7 @@ source devel/setup.bash
 catkin build track_init tracker
 ```
 ### Running
+Before running you need to have the davis camera calibrated with no tangential distortion http://wiki.ros.org/camera_calibration/Tutorials/MonocularCalibration
 #### Easy way
 ```sh
     roslaunch tracker track.launch
